@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Rowing — Programme</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #23273a;
+      --border: #2e3347; --accent: #3b82f6; --accent-hover: #2563eb;
+      --gold: #f59e0b; --silver: #94a3b8; --bronze: #cd7c3c;
+      --text: #e2e8f0; --text-muted: #64748b;
+      --green: #10b981; --red: #ef4444; --orange: #f97316; --purple: #a855f7;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .logo { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    header h1 { font-size: 1.05rem; font-weight: 600; }
+    header p  { font-size: 0.73rem; color: var(--text-muted); }
+    .header-nav { margin-left: auto; display: flex; gap: 8px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius); font-size: 0.8rem; font-weight: 500;
+      border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+      text-decoration: none; transition: border-color .15s, color .15s;
+    }
+    .nav-link:hover  { border-color: var(--accent); color: var(--accent); }
+    .nav-link.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+    aside {
+      width: 270px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); padding: 18px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    }
+    main { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Sidebar controls ── */
+    .filter-group label {
+      display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text-muted); margin-bottom: 4px;
+    }
+    .filter-group select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 7px 9px; border-radius: var(--radius); font-size: 0.86rem; outline: none;
+    }
+    .filter-group select:focus { border-color: var(--accent); }
+    .btn { width: 100%; padding: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    hr { border: none; border-top: 1px solid var(--border); }
+
+    /* ── Competition cards ── */
+    .comp-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 12px; cursor: pointer;
+      font-size: 0.82rem; transition: border-color .15s;
+    }
+    .comp-card:hover  { border-color: var(--accent); }
+    .comp-card.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); }
+    .comp-card-name { font-weight: 600; margin-bottom: 2px; }
+    .comp-card-meta { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* ── Day tabs ── */
+    .day-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .day-tab {
+      padding: 6px 14px; border-radius: var(--radius); font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .day-tab:hover  { border-color: var(--accent); color: var(--accent); }
+    .day-tab.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, var(--surface2)); color: var(--accent); font-weight: 600; }
+
+    /* ── Pill filters ── */
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      padding: 3px 10px; border-radius: 99px; font-size: 0.76rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s; white-space: nowrap;
+    }
+    .pill:hover  { border-color: var(--accent); color: var(--accent); }
+    .pill.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, var(--surface2)); color: var(--accent); font-weight: 600; }
+
+    /* ── Schedule timeline ── */
+    .time-block { display: flex; flex-direction: column; gap: 4px; }
+    .time-label  { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); padding: 4px 0; }
+
+    .race-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color .15s;
+    }
+    .race-card:hover { border-color: var(--accent); }
+
+    .race-time {
+      font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--text); width: 52px; flex-shrink: 0; text-align: center; line-height: 1;
+    }
+    .race-time small { display: block; font-size: 0.65rem; color: var(--text-muted); font-weight: 400; }
+
+    .race-nr {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--surface2);
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0;
+    }
+
+    .race-info { flex: 1; min-width: 0; }
+    .race-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .race-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+
+    .badge {
+      display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 99px;
+      font-size: 0.68rem; font-weight: 600; white-space: nowrap;
+    }
+    .badge-class    { background: color-mix(in srgb, var(--accent) 15%, var(--surface2));  color: var(--accent); }
+    .badge-heat     { background: color-mix(in srgb, var(--accent) 15%, var(--surface2));  color: var(--accent); }
+    .badge-semi     { background: color-mix(in srgb, var(--orange) 15%, var(--surface2));  color: var(--orange); }
+    .badge-final    { background: color-mix(in srgb, var(--gold)   15%, var(--surface2));  color: var(--gold); }
+    .badge-quarter  { background: color-mix(in srgb, var(--purple) 15%, var(--surface2));  color: var(--purple); }
+    .badge-prelim   { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-official { background: color-mix(in srgb, var(--green)  15%, var(--surface2));  color: var(--green); }
+    .badge-startlist{ background: color-mix(in srgb, var(--accent) 15%, var(--surface2));  color: var(--accent); }
+    .badge-scheduled{ background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-cancelled{ background: color-mix(in srgb, var(--red)    15%, var(--surface2));  color: var(--red); }
+
+    /* ── Summary bar ── */
+    .summary-bar {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 16px; align-items: center;
+      font-size: 0.82rem;
+    }
+    .summary-item { display: flex; align-items: center; gap: 5px; }
+
+    /* ── Loading / empty ── */
+    .loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px; color: var(--text-muted); }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.86rem; }
+    .section-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+
+    /* ── Collapsible filter panel ── */
+    .collapsible-panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .collapsible-toggle {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: var(--surface2); border: none; color: var(--text-muted);
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: left;
+      transition: background .15s, color .15s;
+    }
+    .collapsible-toggle:hover { background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); color: var(--text); }
+    .collapsible-toggle.open  { color: var(--accent); }
+    .collapsible-toggle .chevron { font-size: 0.65rem; transition: transform .2s; }
+    .collapsible-toggle.open .chevron { transform: rotate(90deg); }
+    .collapsible-body { display: none; padding: 10px 12px; border-top: 1px solid var(--border); }
+    .collapsible-body.open { display: block; }
+
+    /* Nation search input */
+    .nation-search {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 10px; border-radius: var(--radius);
+      font-size: 0.82rem; outline: none; margin-bottom: 8px;
+    }
+    .nation-search:focus { border-color: var(--accent); }
+
+    /* ── Race card clickable ── */
+    .race-card { cursor: pointer; }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(3px);
+      z-index: 200; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; width: 100%; max-width: 680px;
+      max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .modal-title { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
+    .modal-sub   { font-size: 0.76rem; color: var(--text-muted); }
+    .modal-close {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px; width: 28px; height: 28px;
+      font-size: 0.95rem; cursor: pointer; flex-shrink: 0; margin-left: 10px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, color .15s;
+    }
+    .modal-close:hover { border-color: var(--accent); color: var(--text); }
+    .modal-body { overflow-y: auto; padding: 16px 18px; flex: 1; }
+
+    .boat-row {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .boat-lane {
+      width: 34px; height: 34px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0;
+    }
+    .boat-country { font-weight: 700; font-size: 0.92rem; }
+    .boat-athletes { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Theme toggle ── */
+    .btn-theme {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: var(--radius);
+      padding: 6px 9px; font-size: 1rem; cursor: pointer; line-height: 1;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-theme:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Light mode ── */
+    body.light {
+      --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+      --border: #e2e8f0; --text: #1e293b; --text-muted: #64748b;
+      --accent: #2563eb; --accent-hover: #1d4ed8;
+    }
+
+    @media (max-width: 720px) {
+      .layout { flex-direction: column; }
+      aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .modal-panel { max-height: 95vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📅</div>
+  <div>
+    <h1>World Rowing — Programme</h1>
+    <p>Interface locale · API officielle World Rowing</p>
+  </div>
+  <nav class="header-nav">
+    <a class="nav-link" href="index.html">Résultats & Engagés</a>
+    <a class="nav-link active" href="schedule.html">Programme</a>
+    <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Mode clair / sombre">🌙</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="filter-group">
+      <label>Année</label>
+      <select id="sel-year"></select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="sel-category">
+        <option value="World Rowing Championships">World Rowing Championships</option>
+        <option value="World Rowing Under 19 Championships">World Rowing Under 19 Championships</option>
+        <option value="World Rowing Under 23 Championships">World Rowing Under 23 Championships</option>
+        <option value="World Rowing Cup" selected>World Rowing Cup</option>
+        <option value="Olympics">Olympics</option>
+        <option value="Paralympics">Paralympics</option>
+        <option value="Continental Championships">Continental Championships</option>
+        <option value="International Regattas">International Regattas</option>
+      </select>
+    </div>
+    <button class="btn" id="btn-search">Rechercher</button>
+    <hr />
+    <div id="comp-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <hr />
+    <div style="font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
+      <p>L'API est publique (CORS ouvert).</p>
+      <br/>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="use-proxy" />
+        Proxy local (port 8765)
+      </label>
+    </div>
+  </aside>
+
+  <main id="main-area">
+    <div class="empty">Sélectionnez une année et une catégorie puis cliquez sur Rechercher.</div>
+  </main>
+</div>
+
+<!-- ── Start list modal ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">—</div>
+        <div class="modal-sub"   id="modal-sub">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const DIRECT_BASE = "https://world-rowing-api.soticcloud.net/stats/api";
+const PROXY_BASE  = "http://127.0.0.1:8765/stats/api";
+const getBase = () => document.getElementById("use-proxy").checked ? PROXY_BASE : DIRECT_BASE;
+
+// ── State ─────────────────────────────────────────────────────────────────
+let S = {
+  competitions: [], loadingComps: false, searched: false,
+  selectedComp: null,
+  races: [], loadingRaces: false,
+  dayFilter: null, phaseFilter: null, classFilter: null,
+  // Nation filter
+  nationPanelOpen: false,
+  entries: [], loadingEntries: false, entriesLoaded: false,
+  nationSearch: "", nationFilter: null,
+  // Start list modal
+  modalRace: null, modalDetail: null, loadingModal: false,
+  error: null,
+};
+
+// ── Year dropdown ─────────────────────────────────────────────────────────
+(function() {
+  const sel = document.getElementById("sel-year");
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 1990; y--) {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y; sel.appendChild(o);
+  }
+})();
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function buildUrl(path, params) {
+  const parts = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (v == null) continue;
+    parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+  }
+  return getBase() + path + (parts.length ? "?" + parts.join("&") : "");
+}
+
+async function apiFetch(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function fmtDate(d) {
+  if (!d) return "—";
+  try {
+    return new Date(String(d).replace(" ","T"))
+      .toLocaleDateString("fr-FR", {day:"2-digit", month:"short", year:"numeric"});
+  } catch { return d; }
+}
+
+// Formater l'heure depuis DateString (ISO avec timezone)
+function fmtTime(dateString) {
+  if (!dateString) return "—";
+  try {
+    return new Date(dateString).toLocaleTimeString("fr-FR", {hour:"2-digit", minute:"2-digit"});
+  } catch { return "—"; }
+}
+
+// Formater le jour depuis DateString
+function fmtDay(dateString) {
+  if (!dateString) return "?";
+  try {
+    return new Date(dateString).toLocaleDateString("fr-FR", {weekday:"short", day:"2-digit", month:"short"});
+  } catch { return dateString.slice(0,10); }
+}
+
+function dayKey(dateString) {
+  if (!dateString) return "?";
+  // Extraire la date locale à partir de l'ISO string
+  try {
+    const d = new Date(dateString);
+    return d.toISOString().slice(0,10); // YYYY-MM-DD en UTC
+  } catch { return dateString.slice(0,10); }
+}
+
+function phaseBadgeClass(phase) {
+  if (!phase) return "badge-prelim";
+  const p = phase.toLowerCase();
+  if (p.includes("final") && !p.includes("semi") && !p.includes("quarter")) return "badge-final";
+  if (p.includes("semi")) return "badge-semi";
+  if (p.includes("quarter")) return "badge-quarter";
+  if (p.includes("heat")) return "badge-heat";
+  if (p.includes("prelim")) return "badge-prelim";
+  return "badge-prelim";
+}
+
+function statusBadgeClass(status) {
+  if (!status) return "badge-scheduled";
+  const s = status.toLowerCase();
+  if (s.includes("official")) return "badge-official";
+  if (s.includes("start")) return "badge-startlist";
+  if (s.includes("cancelled")) return "badge-cancelled";
+  return "badge-scheduled";
+}
+
+// ── API ───────────────────────────────────────────────────────────────────
+async function apiCompetitions(year, category) {
+  const url = buildUrl("/competition", {
+    "filter[StartDate]": `${year}-12-31T23:59:59.000Z`,
+    "filter[competitionType.competitionCategory.DisplayName]": category,
+    "filterOptions[StartDate]": "lessThanEqualTo",
+    "include": "competitionType,competitionType.competitionCategory,venue,venue.country",
+    "sort[StartDate]": "desc",
+  });
+  const payload = await apiFetch(url);
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  return data.filter(c => String(c.StartDate || "").startsWith(String(year)));
+}
+
+async function apiEntries(competitionId) {
+  const url = buildUrl(`/competition/${competitionId}`, {
+    "include": "events.boats.boatAthletes.person,events.boatClass,events.boats.country",
+  });
+  const payload = await apiFetch(url);
+  return Array.isArray(payload.data?.events) ? payload.data.events : [];
+}
+
+// Build Set<boatClassDisplay> for a given nation from entries
+function nationBoatClasses(nation) {
+  const classes = new Set();
+  for (const evt of S.entries) {
+    const cls = evt.boatClass?.DisplayName;
+    if (!cls) continue;
+    for (const boat of (evt.boats || [])) {
+      if ((boat.country?.DisplayName || boat.DisplayName) === nation) {
+        classes.add(cls); break;
+      }
+    }
+  }
+  return classes;
+}
+
+async function apiSchedule(competitionId) {
+  const url = buildUrl("/race/", {
+    "filter[event.competitionId]": competitionId,
+    "include": "event.competition,event.boatClass,raceStatus,racePhase,raceBoats",
+    "sort[DateString]": "asc",
+    "paginate": "200",
+  });
+  const payload = await apiFetch(url);
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+async function apiStartList(raceId) {
+  const url = buildUrl(`/race/${raceId}`, {
+    "include": "raceStatus,racePhase,raceBoats.raceBoatAthletes.person",
+  });
+  return apiFetch(url);
+}
+
+// Résout nom complet → code pays à partir des engagés (ex. "Netherlands" → "NED")
+function nationCodeFromEntries(fullName) {
+  for (const evt of S.entries) {
+    for (const boat of (evt.boats || [])) {
+      if (boat.country?.DisplayName === fullName) return boat.DisplayName;
+    }
+  }
+  return fullName;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderCompList() {
+  const el = document.getElementById("comp-list");
+  if (!S.competitions.length) {
+    el.innerHTML = S.searched
+      ? `<div class="empty" style="padding:8px 0;">Aucune compétition.</div>`
+      : "";
+    return;
+  }
+  el.innerHTML = S.competitions.map(c => {
+    const name  = c.DisplayName || c.CompetitionCode || c.id;
+    const venue = c.venue?.DisplayName || "";
+    const start = fmtDate(c.StartDate);
+    const end   = fmtDate(c.EndDate);
+    const active = S.selectedComp?.id === c.id ? "active" : "";
+    return `
+      <div class="comp-card ${active}" onclick="selectComp('${c.id}')">
+        <div class="comp-card-name">${esc(name)}</div>
+        <div class="comp-card-meta">${venue ? "📍 "+esc(venue)+" · " : ""}📅 ${start}${end&&end!==start?" → "+end:""}</div>
+      </div>`;
+  }).join("");
+}
+
+function render() {
+  const main = document.getElementById("main-area");
+
+  if (S.loadingRaces) {
+    main.innerHTML = `<div class="loading"><div class="spinner"></div>Chargement du programme…</div>`;
+    return;
+  }
+
+  if (!S.selectedComp) {
+    main.innerHTML = `<div class="empty">Sélectionnez une compétition dans la barre latérale.</div>`;
+    return;
+  }
+
+  if (!S.races.length) {
+    main.innerHTML = `<div class="empty">Aucune course trouvée pour cette compétition.</div>`;
+    return;
+  }
+
+  // ── Collect metadata ──
+  const days    = [...new Set(S.races.map(r => dayKey(r.DateString)))].sort();
+  const phases  = [...new Set(S.races.map(r => (r.racePhase?.DisplayName || "?")))].sort();
+  const classes = [...new Set(S.races.map(r => (r.event?.boatClass?.DisplayName || "?")))].sort();
+
+  // ── Apply filters ──
+  let races = S.races;
+  if (S.dayFilter)   races = races.filter(r => dayKey(r.DateString) === S.dayFilter);
+  if (S.phaseFilter) races = races.filter(r => (r.racePhase?.DisplayName || "") === S.phaseFilter);
+  if (S.classFilter) races = races.filter(r => (r.event?.boatClass?.DisplayName || "") === S.classFilter);
+  if (S.nationFilter) {
+    // raceBoat.DisplayName = code pays (ex. "NED")
+    // Si les engagés sont chargés, on résout le nom complet → code
+    const code = S.entriesLoaded
+      ? nationCodeFromEntries(S.nationFilter)
+      : S.nationFilter;
+    races = races.filter(r => (r.raceBoats || []).some(b => b.DisplayName === code));
+  }
+
+  // ── Counts per status ──
+  const total    = races.length;
+  const official = races.filter(r => (r.raceStatus?.DisplayName||"").toLowerCase().includes("official")).length;
+  const startList= races.filter(r => (r.raceStatus?.DisplayName||"").toLowerCase().includes("start")).length;
+  const scheduled= races.filter(r => (r.raceStatus?.DisplayName||"").toLowerCase() === "scheduled").length;
+  const cancelled= races.filter(r => (r.raceStatus?.DisplayName||"").toLowerCase().includes("cancel")).length;
+
+  // ── Group by day ──
+  const byDay = {};
+  for (const r of races) {
+    const k = dayKey(r.DateString);
+    (byDay[k] = byDay[k] || []).push(r);
+  }
+
+  let html = `
+    <!-- Competition header -->
+    <div>
+      <div style="font-weight:700;font-size:1.05rem;">${esc(S.selectedComp.DisplayName || "")}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">
+        ${esc(S.selectedComp.venue?.DisplayName || "")} ·
+        ${fmtDate(S.selectedComp.StartDate)} → ${fmtDate(S.selectedComp.EndDate)}
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="summary-bar">
+      <div class="summary-item"><strong>${total}</strong> course(s)</div>
+      ${official  ? `<div class="summary-item"><span class="badge badge-official">Officiel</span> ${official}</div>` : ""}
+      ${startList ? `<div class="summary-item"><span class="badge badge-startlist">Start List</span> ${startList}</div>` : ""}
+      ${scheduled ? `<div class="summary-item"><span class="badge badge-scheduled">Prévu</span> ${scheduled}</div>` : ""}
+      ${cancelled ? `<div class="summary-item"><span class="badge badge-cancelled">Annulé</span> ${cancelled}</div>` : ""}
+    </div>
+
+    <!-- Day tabs -->
+    <div>
+      <div class="section-title" style="margin-bottom:6px;">Jour</div>
+      <div class="day-tabs">
+        <div class="day-tab ${!S.dayFilter?"active":""}" onclick="setDay(null)">Tous</div>
+        ${days.map(d => `<div class="day-tab ${S.dayFilter===d?"active":""}" onclick="setDay('${d}')">${fmtDay(d+"T00:00:00")}</div>`).join("")}
+      </div>
+    </div>
+
+    <!-- Phase filter -->
+    <div>
+      <div class="section-title" style="margin-bottom:6px;">Phase</div>
+      <div class="pills">
+        <div class="pill ${!S.phaseFilter?"active":""}" onclick="setPhase(null)">Toutes</div>
+        ${phases.map(p => `<div class="pill ${S.phaseFilter===p?"active":""}" onclick="setPhase('${esc(p)}')">${esc(p)}</div>`).join("")}
+      </div>
+    </div>
+
+    <!-- Class filter -->
+    <div>
+      <div class="section-title" style="margin-bottom:6px;">Classe de bateau</div>
+      <div class="pills">
+        <div class="pill ${!S.classFilter?"active":""}" onclick="setClass(null)">Toutes</div>
+        ${classes.map(c => `<div class="pill ${S.classFilter===c?"active":""}" onclick="setClass('${esc(c)}')">${esc(c)}</div>`).join("")}
+      </div>
+    </div>
+
+    <!-- Nation filter (collapsed by default) -->
+    ${renderNationPanel()}`;
+
+  function renderNationPanel() {
+    const isOpen = S.nationPanelOpen;
+    const toggleCls = isOpen ? "open" : "";
+
+    let body = "";
+    if (isOpen) {
+      if (S.loadingEntries) {
+        body = `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;color:var(--text-muted);font-size:0.8rem;">
+                  <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Chargement des engagés…
+                </div>`;
+      } else if (!S.entriesLoaded) {
+        body = `<button class="btn" style="font-size:0.78rem;padding:6px;" onclick="loadNationEntries()">
+                  Charger les nations
+                </button>`;
+      } else {
+        // Build nations list from entries
+        const allNations = [...new Set(
+          S.entries.flatMap(evt => (evt.boats||[]).map(b => b.country?.DisplayName || b.DisplayName || "?"))
+        )].sort();
+
+        const q = S.nationSearch.toLowerCase();
+        const filtered = q ? allNations.filter(n => n.toLowerCase().includes(q)) : allNations;
+
+        body = `
+          <input class="nation-search" type="text" placeholder="🔍 Rechercher une nation…"
+            value="${esc(S.nationSearch)}"
+            oninput="S.nationSearch=this.value; render()" />
+          <div class="pills" style="max-height:180px;overflow-y:auto;">
+            <div class="pill ${!S.nationFilter?"active":""}" onclick="setNation(null)">Toutes</div>
+            ${filtered.map(n => `<div class="pill ${S.nationFilter===n?"active":""}" onclick="setNation('${esc(n)}')">${esc(n)}</div>`).join("")}
+          </div>
+          ${S.nationFilter ? `<div style="margin-top:8px;font-size:0.75rem;color:var(--accent);">
+            Filtre actif : <strong>${esc(S.nationFilter)}</strong>
+            <span onclick="setNation(null)" style="cursor:pointer;margin-left:4px;color:var(--text-muted);">✕</span>
+          </div>` : ""}`;
+      }
+    }
+
+    return `
+      <div class="collapsible-panel">
+        <button class="collapsible-toggle ${toggleCls}" onclick="toggleNationPanel()">
+          <span>🌍 Filtre par nation${S.nationFilter ? " · <span style='color:var(--accent);'>"+esc(S.nationFilter)+"</span>" : ""}</span>
+          <span class="chevron">▶</span>
+        </button>
+        ${isOpen ? `<div class="collapsible-body open">${body}</div>` : ""}
+      </div>`;
+  }
+
+  // ── Race timeline ──
+  if (!races.length) {
+    html += `<div class="empty">Aucune course pour cette sélection.</div>`;
+  } else {
+    for (const day of Object.keys(byDay).sort()) {
+      const dayRaces = byDay[day];
+      html += `
+        <div>
+          <div style="font-weight:700;font-size:0.88rem;color:var(--text-muted);
+                      padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;">
+            📅 ${fmtDay(day+"T12:00:00")} — ${dayRaces.length} course(s)
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">`;
+
+      for (const race of dayRaces) {
+        const time     = fmtTime(race.DateString);
+        const name     = race.DisplayName || race.id;
+        const nr       = race.RaceNr || "—";
+        const phase    = race.racePhase?.DisplayName || "—";
+        const cls      = race.event?.boatClass?.DisplayName || "—";
+        const status   = race.raceStatus?.DisplayName || "—";
+        const phaseCls = phaseBadgeClass(phase);
+        const statCls  = statusBadgeClass(status);
+        const rscCode  = race.RscCode || "";
+
+        html += `
+          <div class="race-card" onclick="openStartList('${race.id}')">
+            <div class="race-time">${esc(time)}<small>heure locale</small></div>
+            <div class="race-nr" title="Course n°${nr}">${nr}</div>
+            <div class="race-info">
+              <div class="race-name" title="${esc(rscCode)}">${esc(name)}</div>
+              <div class="race-tags">
+                <span class="badge badge-class">${esc(cls)}</span>
+                <span class="badge ${phaseCls}">${esc(phase)}</span>
+                <span class="badge ${statCls}">${esc(status)}</span>
+              </div>
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;">👁</div>
+          </div>`;
+      }
+      html += `</div></div>`;
+    }
+  }
+
+  main.innerHTML = html;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+async function search() {
+  const year = document.getElementById("sel-year").value;
+  const cat  = document.getElementById("sel-category").value;
+  const btn  = document.getElementById("btn-search");
+
+  S = { competitions: [], loadingComps: true, searched: false,
+        selectedComp: null, races: [], loadingRaces: false,
+        dayFilter: null, phaseFilter: null, classFilter: null,
+        nationPanelOpen: false, entries: [], loadingEntries: false,
+        entriesLoaded: false, nationSearch: "", nationFilter: null,
+        modalRace: null, modalDetail: null, loadingModal: false,
+        error: null };
+  btn.disabled = true;
+  renderCompList();
+
+  try {
+    S.competitions = await apiCompetitions(year, cat);
+  } catch(e) {
+    console.error(e);
+  } finally {
+    S.loadingComps = false; S.searched = true;
+    btn.disabled = false;
+    renderCompList();
+    render();
+  }
+}
+
+async function selectComp(id) {
+  const comp = S.competitions.find(c => c.id === id);
+  if (!comp) return;
+  S.selectedComp = comp;
+  S.races = []; S.loadingRaces = true;
+  S.dayFilter = null; S.phaseFilter = null; S.classFilter = null;
+  S.nationFilter = null; S.nationSearch = "";
+  S.entries = []; S.entriesLoaded = false; S.nationPanelOpen = false;
+  S.modalRace = null; S.modalDetail = null; S.loadingModal = false;
+  renderCompList();
+  render();
+  try {
+    S.races = await apiSchedule(id);
+    // Auto-select current day if competition is ongoing
+    const today = new Date().toISOString().slice(0,10);
+    const days = [...new Set(S.races.map(r => dayKey(r.DateString)))].sort();
+    if (days.includes(today)) S.dayFilter = today;
+  } catch(e) {
+    console.error(e); S.races = [];
+  } finally {
+    S.loadingRaces = false;
+    renderCompList();
+    render();
+  }
+}
+
+function setDay(d)   { S.dayFilter   = d; render(); }
+function setPhase(p) { S.phaseFilter = p; render(); }
+function setClass(c) { S.classFilter = c; render(); }
+function setNation(n) {
+  S.nationFilter = n;
+  if (n) localStorage.setItem("wr-nation-schedule", n);
+  else   localStorage.removeItem("wr-nation-schedule");
+  render();
+}
+
+function toggleNationPanel() {
+  S.nationPanelOpen = !S.nationPanelOpen;
+  render();
+}
+
+async function loadNationEntries() {
+  if (!S.selectedComp || S.loadingEntries) return;
+  S.loadingEntries = true;
+  render();
+  try {
+    S.entries = await apiEntries(S.selectedComp.id);
+    S.entriesLoaded = true;
+    tryRestoreNation();
+  } catch(e) {
+    console.error(e); S.entries = [];
+  } finally {
+    S.loadingEntries = false;
+    render();
+  }
+}
+
+// ── Start list modal ─────────────────────────────────────────────────────
+async function openStartList(raceId) {
+  const race = S.races.find(r => r.id === raceId);
+  if (!race) return;
+  S.modalRace = race; S.modalDetail = null; S.loadingModal = true;
+  renderModal();
+  try { S.modalDetail = await apiStartList(raceId); }
+  catch(e) { console.error(e); }
+  finally { S.loadingModal = false; renderModal(); }
+}
+
+function renderModal() {
+  const overlay = document.getElementById("modal-overlay");
+  if (!S.modalRace) { overlay.classList.remove("open"); return; }
+  overlay.classList.add("open");
+
+  const race   = S.modalRace;
+  const phase  = race.racePhase?.DisplayName || "—";
+  const cls    = race.event?.boatClass?.DisplayName || "—";
+  const status = race.raceStatus?.DisplayName || "—";
+  const time   = fmtTime(race.DateString);
+
+  document.getElementById("modal-title").textContent = race.DisplayName || race.id;
+  document.getElementById("modal-sub").textContent   = `${cls} · ${phase} · ${time} · ${status}`;
+
+  const body = document.getElementById("modal-body");
+
+  if (S.loadingModal) {
+    body.innerHTML = `<div class="loading"><div class="spinner"></div>Chargement de la start list…</div>`;
+    return;
+  }
+
+  const boats = S.modalDetail?.data?.raceBoats || [];
+  if (!boats.length) {
+    body.innerHTML = `<div class="empty">Aucun équipage enregistré pour cette course.</div>`;
+    return;
+  }
+
+  // Trier par couloir
+  const sorted = [...boats].sort((a, b) => (a.Lane ?? 99) - (b.Lane ?? 99));
+
+  let html = `<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:10px;">${sorted.length} équipage(s)</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">`;
+
+  for (const boat of sorted) {
+    const code    = boat.DisplayName || "—";
+    const lane    = boat.Lane ?? "—";
+    const ath     = boat.raceBoatAthletes || [];
+    const names   = ath.length
+      ? ath.map(a => {
+          const p = a.person || {};
+          return [p.FirstName, p.LastName].filter(Boolean).join(" ") || p.DisplayName || "?";
+        }).join(" · ")
+      : "—";
+
+    html += `
+      <div class="boat-row">
+        <div class="boat-lane" title="Couloir">${esc(lane)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="boat-country">${esc(code)}</div>
+          <div class="boat-athletes">${esc(names)}</div>
+        </div>
+      </div>`;
+  }
+
+  body.innerHTML = html + `</div>`;
+}
+
+function closeModal() {
+  S.modalRace = null; S.modalDetail = null; S.loadingModal = false;
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("modal-overlay")) closeModal();
+}
+
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// ── Restaurer nation sauvegardée ─────────────────────────────────────────
+function tryRestoreNation() {
+  const saved = localStorage.getItem("wr-nation-schedule");
+  if (!saved || !S.entriesLoaded) return;
+  const code   = nationCodeFromEntries(saved);
+  const exists = S.races.some(r => (r.raceBoats || []).some(b => b.DisplayName === code));
+  if (exists) {
+    S.nationFilter    = saved;
+    S.nationPanelOpen = true;
+  }
+}
+
+// ── Thème clair / sombre ─────────────────────────────────────────────────
+function initTheme() {
+  if (localStorage.getItem("wr-theme") === "light") {
+    document.body.classList.add("light");
+    document.getElementById("btn-theme").textContent = "🌙";
+  }
+}
+function toggleTheme() {
+  const isLight = document.body.classList.toggle("light");
+  localStorage.setItem("wr-theme", isLight ? "light" : "dark");
+  document.getElementById("btn-theme").textContent = isLight ? "🌙" : "☀️";
+}
+
+document.getElementById("btn-search").addEventListener("click", search);
+initTheme();
+</script>
+
+</body>
+</html>

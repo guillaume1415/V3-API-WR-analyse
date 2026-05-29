@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Rowing — Résultats</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #23273a;
+      --border: #2e3347;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --gold: #f59e0b;
+      --silver: #94a3b8;
+      --bronze: #cd7c3c;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --green: #10b981;
+      --red: #ef4444;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .logo {
+      width: 34px; height: 34px; background: var(--accent); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    header p  { font-size: 0.75rem; color: var(--text-muted); }
+
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    aside {
+      width: 270px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); padding: 20px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+    }
+    .filter-group label {
+      display: block; font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted); margin-bottom: 5px;
+    }
+    .filter-group select {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 10px; border-radius: var(--radius);
+      font-size: 0.88rem; outline: none;
+    }
+    .filter-group select:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%; padding: 9px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius); font-size: 0.88rem;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn:hover   { background: var(--accent-hover); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    main {
+      flex: 1; overflow-y: auto; padding: 22px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text-muted);
+    }
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.83rem; color: var(--text-muted); flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--accent); cursor: pointer; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb .sep { color: var(--border); }
+
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; cursor: pointer;
+      transition: border-color .15s, transform .1s;
+    }
+    .card:hover  { border-color: var(--accent); transform: translateY(-1px); }
+    .card.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+    .card-title  { font-weight: 600; font-size: 0.92rem; margin-bottom: 5px; }
+    .card-meta   { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .badge {
+      display: inline-block; padding: 1px 6px; border-radius: 99px;
+      font-size: 0.68rem; font-weight: 600;
+    }
+    .badge-muted { background: var(--surface2); color: var(--text-muted); }
+
+    .race-list { display: flex; flex-direction: column; gap: 5px; }
+    .race-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: border-color .15s;
+    }
+    .race-item:hover  { border-color: var(--accent); }
+    .race-item.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+    .race-item-name   { flex: 1; font-weight: 500; font-size: 0.88rem; }
+    .race-item-meta   { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+
+    .group-label {
+      margin: 10px 0 4px; font-size: 0.72rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em;
+    }
+
+    .tabs {
+      display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+    }
+    .tab {
+      padding: 7px 14px; font-size: 0.83rem; font-weight: 500;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      color: var(--text-muted); transition: color .15s, border-color .15s;
+    }
+    .tab.active      { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    thead th {
+      background: var(--surface2); padding: 9px 13px; text-align: left;
+      font-size: 0.71rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--text-muted); white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 9px 13px; white-space: nowrap; }
+
+    .rank-1 { font-weight: 700; color: var(--gold); }
+    .rank-2 { font-weight: 700; color: var(--silver); }
+    .rank-3 { font-weight: 700; color: var(--bronze); }
+
+    .athlete-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .athlete-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 3px 9px; font-size: 0.78rem;
+    }
+    .athlete-chip strong { color: var(--text); }
+    .athlete-chip span   { color: var(--text-muted); margin-left: 4px; }
+
+    .loading {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; padding: 48px; color: var(--text-muted);
+    }
+    .spinner {
+      width: 30px; height: 30px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.88rem; }
+    .error-box {
+      background: color-mix(in srgb, var(--red) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+      border-radius: var(--radius); padding: 14px; color: #fca5a5; font-size: 0.84rem;
+    }
+    .scroll-hint { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-bottom: 4px; }
+
+    hr { border: none; border-top: 1px solid var(--border); }
+
+    code {
+      background: var(--surface2); padding: 2px 5px;
+      border-radius: 4px; font-size: 0.8rem;
+    }
+
+    /* ── Boat-class filter pills ── */
+    .class-filters {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 12px 0 4px;
+    }
+    .pill {
+      padding: 4px 12px; border-radius: 99px; font-size: 0.78rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text-muted);
+      transition: border-color .15s, color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .pill:hover  { border-color: var(--accent); color: var(--accent); }
+    .pill.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface2)); color: var(--accent); font-weight: 600; }
+
+    /* ── Compare mode ── */
+    .btn-compare {
+      margin-left: auto; padding: 7px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: var(--radius);
+      font-size: 0.83rem; font-weight: 600; cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s; white-space: nowrap;
+    }
+    .btn-compare:hover  { border-color: var(--accent); color: var(--text); }
+    .btn-compare.active { border-color: var(--accent); color: var(--accent);
+                          background: color-mix(in srgb, var(--accent) 15%, var(--surface2)); }
+
+    .cmp-layout { display: none; flex: 1; overflow: hidden; }
+    .cmp-layout.open { display: flex; }
+
+    .cmp-selector {
+      width: 260px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); padding: 18px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    }
+    .cmp-selector.slot-b { border-right: none; border-left: 1px solid var(--border); }
+    .cmp-label {
+      display: inline-block; padding: 3px 10px; border-radius: 99px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .cmp-label-a { background: color-mix(in srgb, var(--accent) 20%, var(--surface2)); color: var(--accent); }
+    .cmp-label-b { background: color-mix(in srgb, var(--green)  20%, var(--surface2)); color: var(--green); }
+    .cmp-comp-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 12px; cursor: pointer;
+      font-size: 0.84rem; transition: border-color .15s;
+    }
+    .cmp-comp-card:hover  { border-color: var(--accent); }
+    .cmp-comp-card.active-a { border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); }
+    .cmp-comp-card.active-b { border-color: var(--green);
+      background: color-mix(in srgb, var(--green)  10%, var(--surface2)); }
+
+    .cmp-diff { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+    .diff-class-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .diff-class-header {
+      background: var(--surface2); padding: 7px 14px;
+      font-size: 0.74rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-muted); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .diff-country-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 7px 14px; border-bottom: 1px solid var(--border); font-size: 0.83rem;
+    }
+    .diff-country-row:last-child { border-bottom: none; }
+    .diff-flag { width: 90px; flex-shrink: 0; font-weight: 600; color: var(--text); }
+    .diff-flag small { display: block; font-weight: 400; font-size: 0.72rem; color: var(--text-muted); }
+    .diff-athletes { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .diff-ath {
+      padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; white-space: nowrap;
+    }
+    .diff-ath.added   { background: color-mix(in srgb, var(--green) 16%, var(--surface2));
+                        color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 35%, transparent); }
+    .diff-ath.removed { background: color-mix(in srgb, var(--red)   16%, var(--surface2));
+                        color: var(--red);   border: 1px solid color-mix(in srgb, var(--red)   35%, transparent); }
+    .diff-ath.same    { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .nation-delta-pos  { color: var(--green); font-weight: 700; }
+    .nation-delta-neg  { color: var(--red);   font-weight: 700; }
+    .nation-delta-zero { color: var(--text-muted); }
+
+    /* ── Nation cards ── */
+    .nation-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .nation-card-header {
+      display: flex; align-items: stretch; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .nation-card-name {
+      padding: 10px 16px; font-weight: 700; font-size: 0.95rem;
+      min-width: 140px; display: flex; align-items: center;
+      border-right: 1px solid var(--border);
+    }
+    .nation-card-stats {
+      display: flex; align-items: stretch; flex: 1; flex-wrap: wrap;
+    }
+    .nation-stat {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 8px 16px; gap: 2px;
+      border-right: 1px solid var(--border); min-width: 80px;
+    }
+    .nation-stat:last-child { border-right: none; }
+    .nation-stat-val  { font-size: 1.15rem; font-weight: 700; line-height: 1; }
+    .nation-stat-lbl  { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .nation-stat.total .nation-stat-val  { color: var(--text); }
+    .nation-stat.total .nation-stat-sub  { font-size: 0.65rem; color: var(--text-muted); }
+    .nation-stat.removed .nation-stat-val { color: var(--red); }
+    .nation-stat.same    .nation-stat-val { color: var(--text-muted); }
+    .nation-stat.added   .nation-stat-val { color: var(--green); }
+    .nation-card-body {
+      padding: 8px 14px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    }
+    .nation-card-body:empty { display: none; }
+    .nation-card.no-change .nation-card-header { opacity: .6; }
+
+    @media (max-width: 860px) {
+      .cmp-layout.open { flex-direction: column; }
+      .cmp-selector { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .cmp-selector.slot-b { border-left: none; }
+    }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(3px);
+      z-index: 200; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; width: 100%; max-width: 820px;
+      max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 18px 20px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .modal-title   { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
+    .modal-sub     { font-size: 0.78rem; color: var(--text-muted); }
+    .modal-close {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px; width: 30px; height: 30px;
+      font-size: 1rem; cursor: pointer; flex-shrink: 0; margin-left: 12px;
+      display: flex; align-items: center; justify-content: center; line-height: 1;
+      transition: border-color .15s, color .15s;
+    }
+    .modal-close:hover { border-color: var(--accent); color: var(--text); }
+
+    .modal-body { overflow-y: auto; padding: 18px 20px; flex: 1; }
+
+    @media (max-width: 720px) {
+      .layout { flex-direction: column; }
+      aside { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .cards-grid { grid-template-columns: 1fr; }
+      .modal-panel { max-height: 95vh; }
+    }
+
+    /* ── Collapsible nation panel ── */
+    .collapsible-panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 8px; }
+    .collapsible-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface2); border: none; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; text-align: left; transition: background .15s, color .15s; }
+    .collapsible-toggle:hover { background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); color: var(--text); }
+    .collapsible-toggle.open { color: var(--accent); }
+    .collapsible-toggle .chevron { font-size: 0.62rem; transition: transform .2s; flex-shrink: 0; }
+    .collapsible-toggle.open .chevron { transform: rotate(90deg); }
+    .collapsible-body { display: none; padding: 10px 12px; border-top: 1px solid var(--border); }
+    .collapsible-body.open { display: block; }
+    .nation-search { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 9px; border-radius: var(--radius); font-size: 0.8rem; outline: none; margin-bottom: 7px; }
+    .nation-search:focus { border-color: var(--accent); }
+
+    /* ── Inline race detail accordion ── */
+    .race-item.open {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+      border-bottom-color: transparent;
+    }
+    .race-detail-panel {
+      background: var(--surface); border: 1px solid var(--accent);
+      border-top: none; border-bottom-left-radius: var(--radius);
+      border-bottom-right-radius: var(--radius);
+      padding: 16px 18px; margin-bottom: 4px;
+    }
+    .race-chevron { font-size: 0.6rem; color: var(--text-muted); transition: transform .2s; flex-shrink: 0; margin-left: 6px; }
+    .race-item.open .race-chevron { transform: rotate(180deg); color: var(--accent); }
+
+    /* ── Theme toggle ── */
+    .btn-theme {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: var(--radius);
+      padding: 6px 9px; font-size: 1rem; cursor: pointer; line-height: 1;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-theme:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Light mode ── */
+    body.light {
+      --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+      --border: #e2e8f0; --text: #1e293b; --text-muted: #64748b;
+      --accent: #2563eb; --accent-hover: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🚣</div>
+  <div>
+    <h1>World Rowing — Résultats</h1>
+    <p>Interface locale · API officielle World Rowing</p>
+  </div>
+  <nav style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <a href="index.html"    style="padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));text-decoration:none;">Résultats & Engagés</a>
+    <a href="schedule.html" style="padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;border:1px solid var(--border);color:var(--text-muted);text-decoration:none;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">📅 Programme</a>
+  </nav>
+  <button class="btn-theme"   id="btn-theme"   onclick="toggleTheme()" title="Mode clair / sombre">🌙</button>
+  <button class="btn-compare" id="btn-compare" onclick="toggleCompare()">🔀 Comparer</button>
+</header>
+
+<div class="layout" id="normal-layout">
+  <aside>
+    <div class="filter-group">
+      <label>Année</label>
+      <select id="sel-year"></select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="sel-category">
+        <option value="World Rowing Championships">World Rowing Championships</option>
+        <option value="World Rowing Under 19 Championships">World Rowing Under 19 Championships</option>
+        <option value="World Rowing Under 23 Championships">World Rowing Under 23 Championships</option>
+        <option value="World Rowing Cup">World Rowing Cup</option>
+        <option value="Olympics">Olympics</option>
+        <option value="Paralympics">Paralympics</option>
+        <option value="Continental Championships">Continental Championships</option>
+        <option value="International Regattas">International Regattas</option>
+      </select>
+    </div>
+    <button class="btn" id="btn-search">Rechercher</button>
+    <hr />
+    <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.65;">
+      <p>Sélectionnez une année et une catégorie puis cliquez sur Rechercher.</p>
+      <br/>
+      <p>L'API est publique (CORS ouvert). Si des erreurs surviennent, lancez le proxy :</p>
+      <code style="display:block; margin-top:6px;">python proxy.py</code>
+      <br/>
+      <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+        <input type="checkbox" id="use-proxy" />
+        Utiliser proxy local (port 8765)
+      </label>
+    </div>
+  </aside>
+
+  <main id="main-area">
+    <div class="empty">Bienvenue — lancez une recherche pour afficher les compétitions.</div>
+  </main>
+</div>
+
+<!-- ── Compare layout (hidden until compare mode) ── -->
+<div class="cmp-layout" id="cmp-layout">
+  <div class="cmp-selector slot-a" id="cmp-panel-a"></div>
+  <div class="cmp-diff"     id="cmp-diff"></div>
+  <div class="cmp-selector slot-b" id="cmp-panel-b"></div>
+</div>
+
+
+<script>
+"use strict";
+
+const DIRECT_BASE = "https://world-rowing-api.soticcloud.net/stats/api";
+const PROXY_BASE  = "http://127.0.0.1:8765/stats/api";
+const getBase = () => document.getElementById("use-proxy").checked ? PROXY_BASE : DIRECT_BASE;
+
+// ── State ─────────────────────────────────────────────────────────────────
+let S = {
+  competitions: [], loadingComps: false,
+  selectedComp: null,
+  compTab: "races",           // "races" | "entries"
+  // races
+  races: [], loadingRaces: false,
+  classFilter: null,
+  // entries
+  entries: [], loadingEntries: false,
+  entryClassFilter: null,
+  // nation filter (races tab)
+  raceNationPanelOpen: false, raceNationFilter: null, raceNationSearch: "",
+  // courses ouvertes (accordion multi) : Map<raceId → {race, detail, loading, tab}>
+  openRaces: new Map(),
+  error: null, searched: false,
+};
+
+// ── Year dropdown ─────────────────────────────────────────────────────────
+(function() {
+  const sel = document.getElementById("sel-year");
+  const cur = new Date().getFullYear();
+  for (let y = cur; y >= 1990; y--) {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y; sel.appendChild(o);
+  }
+})();
+
+// ── URL / fetch ───────────────────────────────────────────────────────────
+function buildUrl(path, params) {
+  const parts = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (v == null) continue;
+    parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+  }
+  return getBase() + path + (parts.length ? "?" + parts.join("&") : "");
+}
+
+async function apiFetch(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────
+async function apiCompetitions(year, category) {
+  const url = buildUrl("/competition", {
+    "filter[StartDate]": `${year}-12-31T23:59:59.000Z`,
+    "filter[competitionType.competitionCategory.DisplayName]": category,
+    "filterOptions[StartDate]": "lessThanEqualTo",
+    "include": "competitionType,competitionType.competitionCategory,venue,venue.country",
+    "sort[StartDate]": "desc",
+  });
+  const payload = await apiFetch(url);
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  return data.filter(c => String(c.StartDate || "").startsWith(String(year)));
+}
+
+async function apiRaces(competitionId) {
+  const url = buildUrl("/race/", {
+    "include": "raceStatus,racePhase,event.competition.competitionType,event.competition.competitionType.competitionCategory,event.boatClass,raceBoats",
+    "filter[event.competitionId]": competitionId,
+    "sort[date]": "asc",
+  });
+  const payload = await apiFetch(url);
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  return data.filter(r => {
+    const s = r.raceStatus;
+    return (typeof s === "object" ? s?.DisplayName : s) === "Official";
+  });
+}
+
+async function apiEntries(competitionId) {
+  const url = buildUrl(`/competition/${competitionId}`, {
+    "include": "events.boats.boatAthletes.person,events.boatClass,events.boats.country",
+  });
+  const payload = await apiFetch(url);
+  return Array.isArray(payload.data?.events) ? payload.data.events : [];
+}
+
+async function apiRaceDetail(raceId) {
+  const url = buildUrl(`/race/${raceId}`, {
+    "include": "raceStatus,racePhase,raceBoats.raceBoatAthletes.person,raceBoats.invalidMarkResultCode,raceBoats.raceBoatIntermediates.distance",
+    "sortInclude[raceBoats.raceBoatIntermediates.ResultTime]": "asc",
+  });
+  return apiFetch(url);
+}
+
+// ── Compare state ─────────────────────────────────────────────────────────
+const CMP_CATS = [
+  "World Rowing Championships","World Rowing Under 19 Championships",
+  "World Rowing Under 23 Championships","World Rowing Cup","Olympics",
+  "Paralympics","Continental Championships","International Regattas",
+];
+
+let C = {
+  mode: false,
+  a: { year: new Date().getFullYear(), category: "World Rowing Championships",
+       competitions: [], loading: false, searched: false, selected: null,
+       entries: [], loadingEntries: false },
+  b: { year: new Date().getFullYear(), category: "World Rowing Cup",
+       competitions: [], loading: false, searched: false, selected: null,
+       entries: [], loadingEntries: false },
+  diffTab: "events",  // "events" | "nations"
+  classFilter: null,
+  nationFilter: null,
+};
+
+// ── Compare: toggle ───────────────────────────────────────────────────────
+function toggleCompare() {
+  C.mode = !C.mode;
+  document.getElementById("btn-compare").classList.toggle("active", C.mode);
+  document.getElementById("normal-layout").style.display = C.mode ? "none" : "";
+  const cl = document.getElementById("cmp-layout");
+  cl.classList.toggle("open", C.mode);
+  if (C.mode) renderCompare();
+}
+
+// ── Compare: render helpers ───────────────────────────────────────────────
+function cmpYearOptions(selected) {
+  const cur = new Date().getFullYear();
+  let h = "";
+  for (let y = cur; y >= 1990; y--)
+    h += `<option value="${y}" ${y==selected?"selected":""}>${y}</option>`;
+  return h;
+}
+function cmpCatOptions(selected) {
+  return CMP_CATS.map(c =>
+    `<option value="${esc(c)}" ${c===selected?"selected":""}>${esc(c)}</option>`
+  ).join("");
+}
+
+function renderCmpSelector(slot) {
+  const st   = C[slot];
+  const lbl  = slot === "a" ? "A" : "B";
+  const cls  = slot === "a" ? "cmp-label-a" : "cmp-label-b";
+  const aClr = slot === "a" ? "active-a" : "active-b";
+
+  let html = `
+    <div><span class="cmp-label ${cls}">Compétition ${lbl}</span></div>
+    <div class="filter-group">
+      <label>Année</label>
+      <select id="cmp-${slot}-year">${cmpYearOptions(st.year)}</select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="cmp-${slot}-cat">${cmpCatOptions(st.category)}</select>
+    </div>
+    <button class="btn" onclick="cmpSearch('${slot}')">Rechercher</button>`;
+
+  if (st.loading) {
+    html += `<div class="loading" style="padding:20px 0;"><div class="spinner"></div></div>`;
+  } else if (st.searched && !st.competitions.length) {
+    html += `<div class="empty" style="padding:12px 0; font-size:0.8rem;">Aucune compétition.</div>`;
+  } else {
+    for (const c of st.competitions) {
+      const name  = c.DisplayName || c.CompetitionCode || c.id;
+      const venue = c.venue?.DisplayName || "";
+      const active = st.selected?.id === c.id ? aClr : "";
+      html += `
+        <div class="cmp-comp-card ${active}" onclick="cmpSelectComp('${slot}','${c.id}')">
+          <div style="font-weight:600;font-size:0.84rem;">${esc(name)}</div>
+          ${venue ? `<div style="font-size:0.74rem;color:var(--text-muted);">📍 ${esc(venue)}</div>` : ""}
+        </div>`;
+    }
+    if (st.loadingEntries) {
+      html += `<div class="loading" style="padding:12px 0;"><div class="spinner"></div><span style="font-size:0.8rem;">Engagés…</span></div>`;
+    } else if (st.selected && st.entries.length) {
+      html += `<div style="font-size:0.75rem;color:var(--green);padding:4px 0;">
+        ✓ ${st.entries.length} épreuve(s) chargée(s)</div>`;
+    }
+  }
+  document.getElementById(`cmp-panel-${slot}`).innerHTML = html;
+}
+
+function renderCmpDiff() {
+  const el = document.getElementById("cmp-diff");
+  const aOk = C.a.entries.length > 0;
+  const bOk = C.b.entries.length > 0;
+
+  if (!aOk || !bOk) {
+    const msg = !aOk && !bOk
+      ? "Sélectionnez deux compétitions pour lancer la comparaison."
+      : `En attente de la compétition ${!aOk ? "A" : "B"}…`;
+    el.innerHTML = `<div class="empty" style="padding:60px 20px;">${msg}</div>`;
+    return;
+  }
+
+  const diff = buildDiff(C.a.entries, C.b.entries);
+  const nA = C.a.selected?.DisplayName || "A";
+  const nB = C.b.selected?.DisplayName || "B";
+
+  // Class filter pills
+  const classFilter = diff.classes.length > 1 ? `
+    <div>
+      <div class="section-title" style="margin-bottom:6px;">Filtre par classe</div>
+      <div class="class-filters">
+        <div class="pill ${!C.classFilter?"active":""}" onclick="setCmpClassFilter(null)">Toutes</div>
+        ${diff.classes.map(c => `<div class="pill ${C.classFilter===c?"active":""}" onclick="setCmpClassFilter('${esc(c)}')">${esc(c)}</div>`).join("")}
+      </div>
+    </div>` : "";
+
+  // Nation filter pills (from diff)
+  const nations = [...new Set(
+    diff.classes.flatMap(cls => Object.keys(diff.byClass[cls]?.byCountry || {}))
+  )].sort();
+  const nationFilter = nations.length > 1 ? `
+    <div>
+      <div class="section-title" style="margin-bottom:6px;">Filtre par nation</div>
+      <div class="class-filters">
+        <div class="pill ${!C.nationFilter?"active":""}" onclick="setCmpNationFilter(null)">Toutes</div>
+        ${nations.map(n => `<div class="pill ${C.nationFilter===n?"active":""}" onclick="setCmpNationFilter('${esc(n)}')">${esc(n)}</div>`).join("")}
+      </div>
+    </div>` : "";
+
+  const legend = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:0.78rem;">
+      <span class="cmp-label cmp-label-a">${esc(nA)}</span>
+      <span style="color:var(--text-muted);">vs</span>
+      <span class="cmp-label cmp-label-b">${esc(nB)}</span>
+      <span style="margin-left:8px;" class="diff-ath added">+ ajouté dans B</span>
+      <span class="diff-ath removed">− retiré depuis A</span>
+      <span class="diff-ath same">= inchangé</span>
+    </div>`;
+
+  const tabs = `
+    <div class="tabs">
+      <div class="tab ${C.diffTab==="events"?"active":""}"  onclick="setCmpDiffTab('events')">Par épreuve</div>
+      <div class="tab ${C.diffTab==="nations"?"active":""}" onclick="setCmpDiffTab('nations')">Par nation</div>
+    </div>`;
+
+  const content = C.diffTab === "events"
+    ? diffEventsHtml(diff)
+    : diffNationsHtml();   // person-level, cross-boat
+
+  el.innerHTML = legend + tabs + classFilter + nationFilter + content;
+}
+
+function renderCompare() {
+  renderCmpSelector("a");
+  renderCmpSelector("b");
+  renderCmpDiff();
+}
+
+// ── Compare: diff computation ─────────────────────────────────────────────
+function flattenEntries(events) {
+  // Map<className → Map<countryName → Map<personId → name>>>
+  const result = new Map();
+  for (const evt of (events || [])) {
+    const cls = evt.boatClass?.DisplayName || "Autre";
+    if (!result.has(cls)) result.set(cls, new Map());
+    const byCountry = result.get(cls);
+    for (const boat of (evt.boats || [])) {
+      const country = boat.country?.DisplayName || boat.DisplayName || "—";
+      if (!byCountry.has(country)) byCountry.set(country, new Map());
+      const athletes = byCountry.get(country);
+      for (const ba of (boat.boatAthletes || [])) {
+        const p = ba.person || {};
+        const name = [p.FirstName, p.LastName].filter(Boolean).join(" ") || p.DisplayName || "?";
+        athletes.set(String(ba.personId), name);
+      }
+    }
+  }
+  return result;
+}
+
+function buildDiff(entriesA, entriesB) {
+  const mapA = flattenEntries(entriesA);
+  const mapB = flattenEntries(entriesB);
+  const classSet = new Set([...mapA.keys(), ...mapB.keys()]);
+  const classes  = [...classSet].sort();
+  const byClass  = {};
+
+  for (const cls of classes) {
+    const cA = mapA.get(cls) || new Map();
+    const cB = mapB.get(cls) || new Map();
+    const countries = [...new Set([...cA.keys(), ...cB.keys()])].sort();
+    const byCountry = {};
+
+    for (const country of countries) {
+      const athA = cA.get(country) || new Map();  // personId → name
+      const athB = cB.get(country) || new Map();
+      const added = [], removed = [], same = [];
+
+      for (const [id, name] of athB)
+        if (!athA.has(id)) added.push({ id, name });
+        else same.push({ id, name });
+
+      for (const [id, name] of athA)
+        if (!athB.has(id)) removed.push({ id, name });
+
+      byCountry[country] = { added, removed, same };
+    }
+    byClass[cls] = { countries, byCountry };
+  }
+  return { classes, byClass };
+}
+
+// ── Compare: diff renderers ───────────────────────────────────────────────
+function diffEventsHtml(diff) {
+  const classes = C.classFilter ? [C.classFilter] : diff.classes;
+  let html = "";
+
+  for (const cls of classes) {
+    const group = diff.byClass[cls];
+    if (!group) continue;
+
+    // count total changes for header badge
+    let totalAdded = 0, totalRemoved = 0;
+    for (const c of group.countries) {
+      const d = group.byCountry[c];
+      if (C.nationFilter && c !== C.nationFilter) continue;
+      totalAdded   += d.added.length;
+      totalRemoved += d.removed.length;
+    }
+
+    const badge = (totalAdded || totalRemoved)
+      ? `<span class="diff-ath added" style="margin-left:auto;">+${totalAdded}</span>
+         <span class="diff-ath removed">−${totalRemoved}</span>`
+      : `<span style="color:var(--green);font-size:0.75rem;margin-left:auto;">Aucun changement</span>`;
+
+    html += `<div class="diff-class-block">
+      <div class="diff-class-header">${esc(cls)} ${badge}</div>`;
+
+    for (const country of group.countries) {
+      if (C.nationFilter && country !== C.nationFilter) continue;
+      const { added, removed, same } = group.byCountry[country];
+      const allAthletes = [
+        ...removed.map(a => `<span class="diff-ath removed">− ${esc(a.name)}</span>`),
+        ...same.map(a    => `<span class="diff-ath same">= ${esc(a.name)}</span>`),
+        ...added.map(a   => `<span class="diff-ath added">+ ${esc(a.name)}</span>`),
+      ].join("");
+
+      html += `<div class="diff-country-row">
+        <div class="diff-flag">${esc(country)}</div>
+        <div class="diff-athletes">${allAthletes || '<span style="color:var(--text-muted);font-size:0.75rem;">—</span>'}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  return html || `<div class="empty">Aucune donnée pour cette sélection.</div>`;
+}
+
+// buildNationDiff — compare les PERSONNES par nation, tous bateaux confondus.
+// Un athlète qui change de bateau entre A et B reste "inchangé".
+function buildNationDiff(entriesA, entriesB) {
+  function flatByNation(events) {
+    const map = new Map(); // countryName → Map<personId, name>
+    for (const evt of (events || [])) {
+      const cls = evt.boatClass?.DisplayName || "Autre";
+      if (C.classFilter && cls !== C.classFilter) continue;
+      for (const boat of (evt.boats || [])) {
+        const country = boat.country?.DisplayName || boat.DisplayName || "—";
+        if (!map.has(country)) map.set(country, new Map());
+        const athletes = map.get(country);
+        for (const ba of (boat.boatAthletes || [])) {
+          const p = ba.person || {};
+          const name = [p.FirstName, p.LastName].filter(Boolean).join(" ") || p.DisplayName || "?";
+          athletes.set(String(ba.personId), name);
+        }
+      }
+    }
+    return map;
+  }
+
+  const mapA = flatByNation(entriesA);
+  const mapB = flatByNation(entriesB);
+  const countries = [...new Set([...mapA.keys(), ...mapB.keys()])].sort();
+
+  let totalAdded = 0, totalRemoved = 0, totalSame = 0;
+  const nations = {};
+
+  for (const country of countries) {
+    const athA = mapA.get(country) || new Map();
+    const athB = mapB.get(country) || new Map();
+    const added = [], removed = [], same = [];
+
+    for (const [id, name] of athB)
+      athA.has(id) ? same.push({ id, name }) : added.push({ id, name });
+
+    for (const [id, name] of athA)
+      if (!athB.has(id)) removed.push({ id, name });
+
+    nations[country] = { added, removed, same };
+    totalAdded   += added.length;
+    totalRemoved += removed.length;
+    totalSame    += same.length;
+  }
+
+  return { nations, countries, totalAdded, totalRemoved, totalSame };
+}
+
+function diffNationsHtml() {
+  const nd = buildNationDiff(C.a.entries, C.b.entries);
+
+  // Résumé global en haut
+  const totalB = nd.totalSame + nd.totalAdded;
+  const summary = `
+    <div style="display:flex;flex-wrap:wrap;gap:0;
+                background:var(--surface2);border:1px solid var(--border);
+                border-radius:var(--radius);overflow:hidden;font-size:0.84rem;">
+      <!-- Bloc total -->
+      <div style="padding:12px 18px;border-right:1px solid var(--border);
+                  display:flex;flex-direction:column;justify-content:center;gap:2px;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);">Total personnes</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--text);line-height:1;">${totalB}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">= inchangées + ajoutées</div>
+      </div>
+      <!-- Détail -->
+      <div style="padding:12px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <span style="font-size:1.2rem;font-weight:700;" class="nation-delta-neg">−${nd.totalRemoved}</span>
+          <span style="font-size:0.72rem;color:var(--text-muted);">Retirée(s)</span>
+        </div>
+        <div style="width:1px;height:32px;background:var(--border);"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <span style="font-size:1.2rem;font-weight:700;color:var(--text-muted);">${nd.totalSame}</span>
+          <span style="font-size:0.72rem;color:var(--text-muted);">Inchangée(s)</span>
+        </div>
+        <div style="width:1px;height:32px;background:var(--border);"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <span style="font-size:1.2rem;font-weight:700;" class="nation-delta-pos">+${nd.totalAdded}</span>
+          <span style="font-size:0.72rem;color:var(--text-muted);">Ajoutée(s)</span>
+        </div>
+      </div>
+    </div>`;
+
+  // Appliquer le filtre nation
+  const toShow = nd.countries.filter(c =>
+    !C.nationFilter || c === C.nationFilter
+  );
+
+  // Trier : nations avec changements d'abord, puis alphabétique
+  const sorted = [...toShow].sort((a, b) => {
+    const da = nd.nations[a].added.length + nd.nations[a].removed.length;
+    const db = nd.nations[b].added.length + nd.nations[b].removed.length;
+    return db !== da ? db - da : a.localeCompare(b);
+  });
+
+  if (!sorted.length) return summary + `<div class="empty">Aucune nation trouvée.</div>`;
+
+  let cards = "";
+  for (const country of sorted) {
+    const st      = nd.nations[country];
+    const totalN  = st.same.length + st.added.length;
+    const delta   = st.added.length - st.removed.length;
+    const dCls    = delta > 0 ? "nation-delta-pos" : delta < 0 ? "nation-delta-neg" : "nation-delta-zero";
+    const dStr    = delta > 0 ? `+${delta}` : String(delta);
+    const noChg   = !st.added.length && !st.removed.length ? "no-change" : "";
+
+    const athletes = [
+      ...st.removed.map(a => `<span class="diff-ath removed">− ${esc(a.name)}</span>`),
+      ...st.same.map(a    => `<span class="diff-ath same">= ${esc(a.name)}</span>`),
+      ...st.added.map(a   => `<span class="diff-ath added">+ ${esc(a.name)}</span>`),
+    ].join("");
+
+    cards += `
+      <div class="nation-card ${noChg}">
+        <div class="nation-card-header">
+          <div class="nation-card-name">${esc(country)}</div>
+          <div class="nation-card-stats">
+            <div class="nation-stat total">
+              <div class="nation-stat-val">${totalN}</div>
+              <div class="nation-stat-lbl">Total</div>
+              <div class="nation-stat-sub">= inch.+aj.</div>
+            </div>
+            <div class="nation-stat removed">
+              <div class="nation-stat-val">−${st.removed.length}</div>
+              <div class="nation-stat-lbl">Retirée(s)</div>
+            </div>
+            <div class="nation-stat same">
+              <div class="nation-stat-val">${st.same.length}</div>
+              <div class="nation-stat-lbl">Inchangée(s)</div>
+            </div>
+            <div class="nation-stat added">
+              <div class="nation-stat-val">+${st.added.length}</div>
+              <div class="nation-stat-lbl">Ajoutée(s)</div>
+            </div>
+            <div class="nation-stat" style="min-width:60px;">
+              <div class="nation-stat-val ${dCls}">${dStr}</div>
+              <div class="nation-stat-lbl">Δ Net</div>
+            </div>
+          </div>
+        </div>
+        ${athletes ? `<div class="nation-card-body">${athletes}</div>` : ""}
+      </div>`;
+  }
+
+  return summary + `<div style="display:flex;flex-direction:column;gap:8px;">${cards}</div>`;
+}
+
+// ── Compare: actions ──────────────────────────────────────────────────────
+async function cmpSearch(slot) {
+  const st = C[slot];
+  st.year        = document.getElementById(`cmp-${slot}-year`).value;
+  st.category    = document.getElementById(`cmp-${slot}-cat`).value;
+  st.competitions = []; st.loading = true; st.searched = false;
+  st.selected = null; st.entries = [];
+  renderCmpSelector(slot); renderCmpDiff();
+  try { st.competitions = await apiCompetitions(st.year, st.category); }
+  catch(e) { console.error(e); }
+  finally { st.loading = false; st.searched = true; renderCmpSelector(slot); renderCmpDiff(); }
+}
+
+async function cmpSelectComp(slot, id) {
+  const st = C[slot];
+  st.selected = st.competitions.find(c => c.id === id) || null;
+  st.entries = []; st.loadingEntries = true;
+  C.classFilter = null; C.nationFilter = null;
+  renderCmpSelector(slot); renderCmpDiff();
+  try { st.entries = await apiEntries(id); }
+  catch(e) { console.error(e); st.entries = []; }
+  finally { st.loadingEntries = false; renderCmpSelector(slot); renderCmpDiff(); }
+}
+
+function setCmpDiffTab(t)       { C.diffTab = t;        renderCmpDiff(); }
+function setCmpClassFilter(cls) { C.classFilter = cls;  renderCmpDiff(); }
+function setCmpNationFilter(n)  { C.nationFilter = n;   renderCmpDiff(); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function fmtTime(t) {
+  if (!t) return "—";
+  return String(t).trim().replace(/^00:/, "");
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  try {
+    return new Date(String(d).replace(" ", "T"))
+      .toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  } catch { return d; }
+}
+function fmtDist(raw) {
+  if (!raw) return raw;
+  const m = String(raw).match(/^d?(\d+)m?$/i);
+  return m ? m[1] + " m" : raw;
+}
+function esc(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function rankClass(r) { return r==1?"rank-1":r==2?"rank-2":r==3?"rank-3":""; }
+function rankEmoji(r) { return r==1?"🥇":r==2?"🥈":r==3?"🥉":(r||"—"); }
+
+// ── Main area render ──────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById("main-area");
+
+  if (S.error) {
+    el.innerHTML = `<div class="error-box"><strong>Erreur</strong> — ${esc(S.error)}<br/><br/>
+      Activez "Utiliser proxy local" et lancez <code>python proxy.py</code>.</div>`;
+    return;
+  }
+  if (S.loadingComps) {
+    el.innerHTML = `<div class="loading"><div class="spinner"></div>Recherche des compétitions…</div>`;
+    return;
+  }
+  if (!S.competitions.length) {
+    el.innerHTML = `<div class="empty">${S.searched
+      ? "Aucune compétition trouvée pour cette sélection."
+      : "Bienvenue — lancez une recherche pour afficher les compétitions."}</div>`;
+    return;
+  }
+
+  let html = renderCompList();
+  if (S.selectedComp) html += renderRaceSection();
+  el.innerHTML = html;
+}
+
+function renderCompList() {
+  const year = document.getElementById("sel-year").value;
+  const cat  = document.getElementById("sel-category").value;
+  let html = `
+    <div>
+      <div class="section-title">Compétitions · ${year} · ${esc(cat)}</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">${S.competitions.length} compétition(s)</div>
+    </div>
+    <div class="cards-grid">`;
+  for (const c of S.competitions) {
+    const name    = c.DisplayName || c.CompetitionCode || c.id;
+    const venue   = c.venue?.DisplayName || "—";
+    const country = c.venue?.country?.DisplayName || "";
+    const start   = fmtDate(c.StartDate);
+    const end     = fmtDate(c.EndDate);
+    const active  = S.selectedComp?.id === c.id ? "active" : "";
+    html += `
+      <div class="card ${active}" onclick="selectComp('${c.id}')">
+        <div class="card-title">${esc(name)}</div>
+        <div class="card-meta">
+          <span>📍 ${esc(venue)}${country ? ", "+esc(country) : ""}</span>
+          <span>📅 ${start}${end && end!==start ? " → "+end : ""}</span>
+        </div>
+      </div>`;
+  }
+  return html + `</div>`;
+}
+
+function renderRaceSection() {
+  const compName = esc(S.selectedComp?.DisplayName || S.selectedComp?.id);
+  let html = `
+    <hr/>
+    <div class="breadcrumb">
+      <a onclick="clearAll()">Compétitions</a>
+      <span class="sep">›</span>
+      <span>${compName}</span>
+    </div>
+    <div class="tabs">
+      <div class="tab ${S.compTab==="races"?"active":""}"   onclick="setCompTab('races')">Courses</div>
+      <div class="tab ${S.compTab==="entries"?"active":""}" onclick="setCompTab('entries')">Engagés</div>
+    </div>`;
+
+  if (S.compTab === "races")   html += renderRaceList();
+  if (S.compTab === "entries") html += renderEntriesList();
+  return html;
+}
+
+// Résout le nom complet d'une nation (ex. "Netherlands") en code pays (ex. "NED")
+// en cherchant dans les engagés.  Retourne le code, ou la valeur brute en fallback.
+function nationCodeFromEntries(fullName) {
+  for (const evt of S.entries) {
+    for (const boat of (evt.boats || [])) {
+      if (boat.country?.DisplayName === fullName) return boat.DisplayName;
+    }
+  }
+  return fullName; // fallback : code direct si pas de nom complet trouvé
+}
+
+function renderRaceList() {
+  if (S.loadingRaces) {
+    return `<div class="loading"><div class="spinner"></div>Chargement des courses…</div>`;
+  }
+  if (!S.races.length) {
+    return `<div class="empty">Aucune course officielle trouvée.</div>`;
+  }
+
+  const classes = [...new Set(S.races.map(r => r.event?.boatClass?.DisplayName || "Autre"))];
+  let html = `<div>
+    <div class="section-title" style="margin-bottom:0;">Courses officielles (${S.races.length})</div>`;
+
+  if (classes.length > 1) {
+    html += `<div class="class-filters">
+      <div class="pill ${!S.classFilter?"active":""}" onclick="setClassFilter(null)">Toutes</div>
+      ${classes.map(c => `<div class="pill ${S.classFilter===c?"active":""}" onclick="setClassFilter('${esc(c)}')">${esc(c)}</div>`).join("")}
+    </div>`;
+  }
+
+  // ── Collapsible nation filter panel ──────────────────────────────────────
+  const hasEntries = S.entries.length > 0;
+  let nationPanelBody = "";
+  if (!hasEntries) {
+    nationPanelBody = `<div style="font-size:0.78rem;color:var(--text-muted);line-height:1.55;">
+      Chargez d'abord les
+      <a style="color:var(--accent);cursor:pointer;" onclick="setCompTab('entries')">Engagés</a>
+      pour filtrer par nation.
+    </div>`;
+  } else {
+    // Collect all nations from entries
+    const allNations = (() => {
+      const ns = new Set();
+      for (const evt of S.entries)
+        for (const boat of (evt.boats || []))
+          ns.add(boat.country?.DisplayName || boat.DisplayName || "—");
+      return [...ns].sort();
+    })();
+    const q = S.raceNationSearch.toLowerCase();
+    const filtered = q ? allNations.filter(n => n.toLowerCase().includes(q)) : allNations;
+    const activeLabel = S.raceNationFilter ? ` · <em style="color:var(--accent);font-style:normal;">${esc(S.raceNationFilter)}</em>` : "";
+    nationPanelBody = `
+      <input class="nation-search" type="text" placeholder="Rechercher une nation…"
+             value="${esc(S.raceNationSearch)}"
+             oninput="setRaceNationSearch(this.value)"/>
+      <div class="class-filters" style="padding:0;max-height:170px;overflow-y:auto;gap:5px;">
+        <div class="pill ${!S.raceNationFilter?"active":""}" onclick="setRaceNation(null)">Toutes</div>
+        ${filtered.map(n => `<div class="pill ${S.raceNationFilter===n?"active":""}" onclick="setRaceNation('${esc(n)}')">${esc(n)}</div>`).join("")}
+      </div>`;
+  }
+
+  const toggleLabel = `🏴 Filtrer par nation${S.raceNationFilter && hasEntries ? " · " + esc(S.raceNationFilter) : ""}`;
+  html += `
+  <div class="collapsible-panel">
+    <button class="collapsible-toggle ${S.raceNationPanelOpen?"open":""}" onclick="toggleRaceNationPanel()">
+      <span>${toggleLabel}</span>
+      <span class="chevron">▶</span>
+    </button>
+    <div class="collapsible-body ${S.raceNationPanelOpen?"open":""}">
+      ${nationPanelBody}
+    </div>
+  </div>`;
+
+  // ── Apply nation filter : ne garder que les courses où le pays a
+  //    effectivement un bateau dans raceBoats ────────────────────────────
+  let racesToShow = S.races;
+  if (S.raceNationFilter) {
+    // raceBoat.DisplayName = code pays (ex. "NED") — on résout depuis les engagés si dispo
+    const code = hasEntries
+      ? nationCodeFromEntries(S.raceNationFilter)
+      : S.raceNationFilter;
+    racesToShow = S.races.filter(r =>
+      (r.raceBoats || []).some(b => b.DisplayName === code)
+    );
+  }
+
+  const groups = {};
+  for (const r of racesToShow) {
+    const cls = r.event?.boatClass?.DisplayName || "Autre";
+    if (S.classFilter && cls !== S.classFilter) continue;
+    (groups[cls] = groups[cls] || []).push(r);
+  }
+
+  html += `<div class="race-list" style="margin-top:10px;">`;
+  if (!Object.keys(groups).length) {
+    html += `<div class="empty" style="padding:24px;">Aucune course pour cette sélection.</div>`;
+  } else {
+    for (const [cls, races] of Object.entries(groups)) {
+      if (!S.classFilter) html += `<div class="group-label">${esc(cls)}</div>`;
+      for (const r of races) {
+        const phase  = (typeof r.racePhase === "object" ? r.racePhase?.DisplayName : r.racePhase) || "—";
+        const dt     = fmtDate(r.Date || r.date);
+        const isOpen = S.openRaces.has(r.id);
+        html += `
+          <div class="race-item ${isOpen ? "open" : ""}" id="race-${r.id}" onclick="toggleRaceDetail('${r.id}')">
+            <div class="race-item-name">${esc(r.DisplayName || r.id)}</div>
+            <div class="race-item-meta">${dt}</div>
+            <span class="badge badge-muted">${esc(phase)}</span>
+            <span class="race-chevron">▼</span>
+          </div>`;
+        if (isOpen) {
+          html += `<div class="race-detail-panel">${renderRaceDetailInline(r.id)}</div>`;
+        }
+      }
+    }
+  }
+  return html + `</div></div>`;
+}
+
+function renderRaceDetailInline(id) {
+  const st = S.openRaces.get(id);
+  if (!st) return "";
+  if (st.loading) {
+    return `<div class="loading" style="padding:32px 0;"><div class="spinner"></div>Chargement des résultats…</div>`;
+  }
+  const race  = st.detail?.data || {};
+  const boats = race.raceBoats || [];
+
+  const sub = `<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;">
+    ${esc(fmtDate(race.Date))} · ${boats.length} bateaux
+  </div>`;
+
+  const sid = esc(id);
+  const tabs = `<div class="tabs" style="margin-bottom:12px;">
+    <div class="tab ${st.tab==="results"?"active":""}"   onclick="setRaceTab('${sid}','results')">Résultats</div>
+    <div class="tab ${st.tab==="athletes"?"active":""}"  onclick="setRaceTab('${sid}','athletes')">Équipages</div>
+    <div class="tab ${st.tab==="pace"?"active":""}"      onclick="setRaceTab('${sid}','pace')">Intermédiaires</div>
+  </div>`;
+
+  const content = st.tab === "results"  ? tabResults(boats)
+                : st.tab === "athletes" ? tabAthletes(boats)
+                : tabPace(boats);
+
+  return sub + tabs + content;
+}
+
+function renderEntriesList() {
+  if (S.loadingEntries) {
+    return `<div class="loading"><div class="spinner"></div>Chargement des engagés…</div>`;
+  }
+  if (!S.entries.length) {
+    return `<div class="empty">Aucun engagé disponible pour cette compétition.</div>`;
+  }
+
+  // distinct boat classes
+  const classes = [...new Set(S.entries.map(e => e.boatClass?.DisplayName || "Autre"))];
+
+  // filter
+  const filtered = S.entryClassFilter
+    ? S.entries.filter(e => (e.boatClass?.DisplayName || "Autre") === S.entryClassFilter)
+    : S.entries;
+
+  // total boats
+  const totalBoats = filtered.reduce((sum, e) => sum + (e.boats?.length || 0), 0);
+
+  let html = `<div>
+    <div class="section-title" style="margin-bottom:0;">${filtered.length} épreuve(s) · ${totalBoats} bateau(x) engagé(s)</div>`;
+
+  if (classes.length > 1) {
+    html += `<div class="class-filters">
+      <div class="pill ${!S.entryClassFilter?"active":""}" onclick="setEntryClassFilter(null)">Toutes</div>
+      ${classes.map(c => `<div class="pill ${S.entryClassFilter===c?"active":""}" onclick="setEntryClassFilter('${esc(c)}')">${esc(c)}</div>`).join("")}
+    </div>`;
+  }
+
+  html += `<div class="table-wrap" style="margin-top:10px;"><table>
+    <thead><tr>
+      <th>Épreuve</th>
+      <th>Classe</th>
+      <th>Pays</th>
+      <th>Athlètes</th>
+      <th>Rang final</th>
+    </tr></thead>
+    <tbody>`;
+
+  for (const event of filtered) {
+    const evtName = event.DisplayName || "—";
+    const cls     = event.boatClass?.DisplayName || "—";
+    const boats   = event.boats || [];
+
+    if (!boats.length) {
+      html += `<tr>
+        <td><strong>${esc(evtName)}</strong></td>
+        <td><span class="badge badge-muted">${esc(cls)}</span></td>
+        <td colspan="3" style="color:var(--text-muted)">Aucun bateau</td>
+      </tr>`;
+      continue;
+    }
+
+    // sort by finalRankIndex if available, else alphabetically
+    const sorted = [...boats].sort((a, b) => {
+      const ra = a.finalRankIndex ?? 999;
+      const rb = b.finalRankIndex ?? 999;
+      return ra !== rb ? ra - rb : (a.DisplayName || "").localeCompare(b.DisplayName || "");
+    });
+
+    for (let i = 0; i < sorted.length; i++) {
+      const b       = sorted[i];
+      const country = b.country?.DisplayName || b.DisplayName || "—";
+      const flag    = b.DisplayName || "—";  // country code
+      const ath     = b.boatAthletes || [];
+      const names   = ath.map(a => {
+        const p = a.person || {};
+        return [p.FirstName, p.LastName].filter(Boolean).join(" ") || p.DisplayName || "—";
+      }).join(", ");
+      const rank = b.finalRank || "—";
+
+      html += `<tr>
+        ${i === 0 ? `<td rowspan="${sorted.length}" style="vertical-align:top; font-weight:600; border-right:1px solid var(--border);">${esc(evtName)}<br/><span class="badge badge-muted" style="margin-top:4px;">${esc(cls)}</span></td>` : ""}
+        <td><strong>${esc(flag)}</strong> <span style="color:var(--text-muted);font-size:0.8rem;">${esc(country)}</span></td>
+        <td style="color:var(--text-muted); font-size:0.82rem;">${esc(names) || "—"}</td>
+        <td class="${rankClass(rank)}" style="font-variant-numeric:tabular-nums;">${rankEmoji(rank)}</td>
+      </tr>`;
+    }
+  }
+
+  return html + `</tbody></table></div></div>`;
+}
+
+// ── Tab content ───────────────────────────────────────────────────────────
+function tabResults(boats) {
+  if (!boats.length) return `<div class="empty">Aucun résultat.</div>`;
+  const sorted = [...boats].sort((a,b) => (a.Rank||99)-(b.Rank||99));
+  let html = `<div class="table-wrap"><table>
+    <thead><tr><th>Rang</th><th>Couloir</th><th>Équipe</th><th>Temps</th><th>Invalidation</th></tr></thead><tbody>`;
+  for (const b of sorted) {
+    const mark = b.invalidMarkResultCode;
+    const markName = mark ? (typeof mark==="object" ? mark.DisplayName : mark) : null;
+    html += `<tr>
+      <td class="${rankClass(b.Rank)}">${rankEmoji(b.Rank)}</td>
+      <td style="color:var(--text-muted)">${esc(b.Lane??"—")}</td>
+      <td><strong>${esc(b.DisplayName||b.boatId||"—")}</strong></td>
+      <td style="font-variant-numeric:tabular-nums;font-family:monospace;">${esc(fmtTime(b.ResultTime))}</td>
+      <td>${markName?`<span class="badge badge-muted">${esc(markName)}</span>`:'<span style="color:var(--green)">✓</span>'}</td>
+    </tr>`;
+  }
+  return html + `</tbody></table></div>`;
+}
+
+function tabAthletes(boats) {
+  if (!boats.length) return `<div class="empty">Aucun équipage.</div>`;
+  const sorted = [...boats].sort((a,b) => (a.Rank||99)-(b.Rank||99));
+  let html = `<div class="table-wrap"><table>
+    <thead><tr><th>Rang</th><th>Équipe</th><th>Athlètes</th></tr></thead><tbody>`;
+  for (const b of sorted) {
+    const athletes = b.raceBoatAthletes || [];
+    const chips = athletes.length
+      ? athletes.map(a => {
+          const p = a.person || {};
+          const name = [p.FirstName, p.LastName].filter(Boolean).join(" ") || p.DisplayName || "—";
+          const pos  = a.boatPosition ? ` · ${a.boatPosition}` : "";
+          return `<div class="athlete-chip"><strong>${esc(name)}</strong><span>${esc(pos)}</span></div>`;
+        }).join("")
+      : `<span style="color:var(--text-muted)">—</span>`;
+    html += `<tr>
+      <td class="${rankClass(b.Rank)}">${rankEmoji(b.Rank)}</td>
+      <td><strong>${esc(b.DisplayName||b.boatId||"—")}</strong></td>
+      <td><div class="athlete-list">${chips}</div></td>
+    </tr>`;
+  }
+  return html + `</tbody></table></div>`;
+}
+
+// ── Pace helpers ─────────────────────────────────────────────────────────
+// Convertit "HH:MM:SS.cc" ou "MM:SS.cc" en secondes
+function parseSec(t) {
+  if (!t) return null;
+  const parts = String(t).trim().split(":");
+  if (parts.length === 3) return +parts[0]*3600 + +parts[1]*60 + parseFloat(parts[2]);
+  if (parts.length === 2) return +parts[0]*60  + parseFloat(parts[1]);
+  return parseFloat(t) || null;
+}
+
+// Secondes → "M:SS.cc"
+function secToSplit(sec) {
+  if (sec == null || isNaN(sec) || sec < 0) return "—";
+  const m = Math.floor(sec / 60);
+  const s = sec - m * 60;
+  return `${m}:${s.toFixed(2).padStart(5, "0")}`;
+}
+
+function tabPace(boats) {
+  if (!boats.length) return `<div class="empty">Aucun intermédiaire.</div>`;
+  const sorted = [...boats].sort((a,b) => (a.Rank||99)-(b.Rank||99));
+
+  // ── Construire la liste des distances triées ───────────────────────────
+  const distMap = new Map(); // rawKey → label affiché
+  for (const b of sorted)
+    for (const i of (b.raceBoatIntermediates||[]))
+      if (i.distance?.DisplayName && !distMap.has(i.distance.DisplayName))
+        distMap.set(i.distance.DisplayName, fmtDist(i.distance.DisplayName));
+
+  if (!distMap.size) return `<div class="empty">Aucune donnée d'intermédiaires disponible.</div>`;
+
+  const dists = [...distMap.keys()].sort((a,b) =>
+    parseInt(a.replace(/\D/g,""),10) - parseInt(b.replace(/\D/g,""),10));
+
+  // ── Index des intermédiaires par bateau ───────────────────────────────
+  // boatKey → Map< distKey → intermediate >
+  const boatIdx = new Map();
+  for (const b of sorted) {
+    const key = b.id || b.boatId || b.DisplayName;
+    const dm  = new Map();
+    for (const i of (b.raceBoatIntermediates||[]))
+      if (i.distance?.DisplayName) dm.set(i.distance.DisplayName, i);
+    boatIdx.set(key, dm);
+  }
+
+  // ── Pré-calcul des stats par distance ─────────────────────────────────
+  // Pour chaque distance : temps cumulés, splits, rangs split, leader cumulé
+  const stats = {}; // distKey → { cumBySeat, splitBySeat, splitRank, leaderCum }
+
+  for (let di = 0; di < dists.length; di++) {
+    const d    = dists[di];
+    const prev = di > 0 ? dists[di-1] : null;
+
+    const cumBySeat   = new Map(); // boatKey → secondes cumulées
+    const splitBySeat = new Map(); // boatKey → secondes split
+
+    for (const b of sorted) {
+      const key   = b.id || b.boatId || b.DisplayName;
+      const inter = boatIdx.get(key)?.get(d);
+      const cum   = parseSec(inter?.ResultTime);
+      cumBySeat.set(key, cum);
+
+      if (prev == null) {
+        // premier point : split = cumulé
+        splitBySeat.set(key, cum);
+      } else {
+        const prevInter = boatIdx.get(key)?.get(prev);
+        const prevCum   = parseSec(prevInter?.ResultTime);
+        splitBySeat.set(key, cum != null && prevCum != null ? cum - prevCum : null);
+      }
+    }
+
+    // Leader cumulé (= min des temps cumulés valides)
+    const validCums = [...cumBySeat.values()].filter(v => v != null);
+    const leaderCum = validCums.length ? Math.min(...validCums) : null;
+
+    // Rang dans les splits : trier les splits valides → rang 1 = plus rapide
+    const splitEntries = [...splitBySeat.entries()]
+      .filter(([,v]) => v != null)
+      .sort(([,a],[,b]) => a - b);
+    const splitRank = new Map(splitEntries.map(([k], idx) => [k, idx + 1]));
+
+    stats[d] = { cumBySeat, splitBySeat, splitRank, leaderCum };
+  }
+
+  // ── Rendu du tableau ──────────────────────────────────────────────────
+  const tdBase = `style="font-variant-numeric:tabular-nums;font-family:monospace;
+                         vertical-align:top;padding:8px 13px;"`;
+
+  let html = `<div class="scroll-hint">← défiler horizontalement →</div>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th rowspan="2">Rang</th>
+        <th rowspan="2">Équipe</th>
+        ${dists.map(d => `<th colspan="1" style="text-align:center;">${esc(distMap.get(d))}</th>`).join("")}
+      </tr>
+      <tr>
+        ${dists.map(() => `<th style="font-size:0.66rem;color:var(--text-muted);font-weight:500;border-top:1px solid var(--border);">
+          <span style="opacity:.7;">cumulé · </span>split · écart
+        </th>`).join("")}
+      </tr>
+    </thead>
+    <tbody>`;
+
+  for (const b of sorted) {
+    const key = b.id || b.boatId || b.DisplayName;
+
+    html += `<tr>
+      <td class="${rankClass(b.Rank)}" style="vertical-align:top;">${rankEmoji(b.Rank)}</td>
+      <td style="vertical-align:top;"><strong>${esc(b.DisplayName||b.boatId||"—")}</strong></td>`;
+
+    for (const d of dists) {
+      const st    = stats[d];
+      const inter = boatIdx.get(key)?.get(d);
+
+      if (!inter) { html += `<td style="color:var(--text-muted);vertical-align:top;">—</td>`; continue; }
+
+      const cum      = st.cumBySeat.get(key);
+      const split    = st.splitBySeat.get(key);
+      const sRank    = st.splitRank.get(key);
+      const cumGap   = cum != null && st.leaderCum != null ? cum - st.leaderCum : null;
+      const isLeader = cumGap != null && cumGap < 0.005;
+
+      // Ligne 1 : temps cumulé + rang cumulé
+      const cumRankStr = inter.Rank
+        ? `<small style="color:var(--text-muted);margin-left:2px;">(${inter.Rank})</small>` : "";
+
+      // Ligne 2 : split + rang split + écart cumulé vs leader
+      const splitStr  = `<span style="color:var(--text-muted);">${esc(secToSplit(split))}</span>`;
+      const sRankStr  = sRank
+        ? `<small style="color:var(--text-muted);margin-left:2px;">(${sRank})</small>` : "";
+      const gapStr    = isLeader
+        ? `<small style="color:var(--green);margin-left:4px;">—</small>`
+        : cumGap != null
+          ? `<small style="color:var(--red);margin-left:4px;">+${cumGap.toFixed(2)}</small>`
+          : "";
+
+      html += `<td ${tdBase}>
+        <div>${esc(fmtTime(inter.ResultTime))}${cumRankStr}</div>
+        <div style="margin-top:3px;padding-top:3px;border-top:1px solid var(--border);">
+          ${splitStr}${sRankStr}${gapStr}
+        </div>
+      </td>`;
+    }
+
+    html += `</tr>`;
+  }
+
+  return html + `</tbody></table></div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+async function search() {
+  const year = document.getElementById("sel-year").value;
+  const cat  = document.getElementById("sel-category").value;
+  const btn  = document.getElementById("btn-search");
+
+  S = { competitions: [], loadingComps: true, selectedComp: null,
+        compTab: "races",
+        races: [], loadingRaces: false, classFilter: null,
+        entries: [], loadingEntries: false, entryClassFilter: null,
+        raceNationPanelOpen: false, raceNationFilter: null, raceNationSearch: "",
+        openRaces: new Map(),
+        error: null, searched: true };
+  btn.disabled = true;
+  render();
+  try {
+    S.competitions = await apiCompetitions(year, cat);
+  } catch(e) { S.error = e.message; }
+  finally { S.loadingComps = false; btn.disabled = false; render(); }
+}
+
+async function selectComp(id) {
+  const comp = S.competitions.find(c => c.id === id);
+  if (!comp) return;
+  Object.assign(S, {
+    selectedComp: comp, compTab: "races",
+    races: [], loadingRaces: true, classFilter: null,
+    entries: [], loadingEntries: false, entryClassFilter: null,
+    raceNationPanelOpen: false, raceNationFilter: null, raceNationSearch: "",
+    openRaces: new Map(),
+  });
+  render();
+  try { S.races = await apiRaces(id); }
+  catch(e) { console.error(e); }
+  finally { S.loadingRaces = false; render(); }
+}
+
+async function loadEntries() {
+  if (!S.selectedComp) return;
+  if (S.entries.length || S.loadingEntries) return; // already loaded/loading
+  S.loadingEntries = true;
+  render();
+  try { S.entries = await apiEntries(S.selectedComp.id); }
+  catch(e) { console.error("Entries error:", e); S.entries = []; }
+  finally { S.loadingEntries = false; tryRestoreNation(); render(); }
+}
+
+// Bascule une course : ouvre si fermée, ferme si déjà ouverte
+function toggleRaceDetail(id) {
+  if (S.openRaces.has(id)) {
+    S.openRaces.delete(id);
+    render();
+    return;
+  }
+  selectRace(id);
+}
+
+async function selectRace(id) {
+  const race = S.races.find(r => r.id === id);
+  if (!race) return;
+  // Ajouter à la map avec état initial "en chargement"
+  S.openRaces.set(id, { race, detail: null, loading: true, tab: "results" });
+  render();
+  requestAnimationFrame(() => {
+    document.getElementById(`race-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  try {
+    const detail = await apiRaceDetail(id);
+    if (S.openRaces.has(id)) S.openRaces.get(id).detail = detail;
+  } catch(e) { console.error(e); }
+  finally {
+    if (S.openRaces.has(id)) S.openRaces.get(id).loading = false;
+    render();
+  }
+}
+
+function clearAll() {
+  Object.assign(S, {
+    selectedComp: null, compTab: "races",
+    races: [], classFilter: null,
+    entries: [], entryClassFilter: null,
+    raceNationPanelOpen: false, raceNationFilter: null, raceNationSearch: "",
+    openRaces: new Map(),
+  });
+  render();
+}
+
+function setCompTab(t) {
+  S.compTab = t;
+  if (t === "entries") loadEntries();
+  else render();
+}
+function setClassFilter(cls)      { S.classFilter = cls; render(); }
+function setEntryClassFilter(cls) { S.entryClassFilter = cls; render(); }
+function setRaceTab(id, tab) {
+  if (S.openRaces.has(id)) S.openRaces.get(id).tab = tab;
+  render();
+}
+
+// ── Nation filter (races tab) ─────────────────────────────────────────────
+function toggleRaceNationPanel() {
+  S.raceNationPanelOpen = !S.raceNationPanelOpen;
+  if (S.raceNationPanelOpen && !S.entries.length && !S.loadingEntries) {
+    loadEntries();
+  } else {
+    render();
+  }
+}
+function setRaceNation(n) {
+  S.raceNationFilter = n;
+  // Mémoriser la sélection
+  if (n) localStorage.setItem("wr-nation-races", n);
+  else   localStorage.removeItem("wr-nation-races");
+  render();
+}
+function setRaceNationSearch(v) { S.raceNationSearch = v; render(); }
+
+// Restaurer la nation sauvegardée une fois les engagés chargés
+function tryRestoreNation() {
+  const saved = localStorage.getItem("wr-nation-races");
+  if (!saved || !S.entries.length) return;
+  const nations = new Set();
+  for (const evt of S.entries)
+    for (const boat of (evt.boats || []))
+      nations.add(boat.country?.DisplayName || boat.DisplayName || "");
+  if (nations.has(saved)) {
+    S.raceNationFilter    = saved;
+    S.raceNationPanelOpen = true;
+  }
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+function initTheme() {
+  if (localStorage.getItem("wr-theme") === "light") {
+    document.body.classList.add("light");
+    document.getElementById("btn-theme").textContent = "🌙";
+  }
+}
+function toggleTheme() {
+  const isLight = document.body.classList.toggle("light");
+  localStorage.setItem("wr-theme", isLight ? "light" : "dark");
+  document.getElementById("btn-theme").textContent = isLight ? "🌙" : "☀️";
+}
+
+// Escape : ferme toutes les courses ouvertes ou quitte le mode comparaison
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (C.mode) { toggleCompare(); return; }
+  if (S.openRaces.size) { S.openRaces.clear(); render(); }
+});
+
+document.getElementById("btn-search").addEventListener("click", search);
+initTheme();
+</script>
+</body>
+</html>
