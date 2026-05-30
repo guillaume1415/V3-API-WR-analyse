@@ -488,15 +488,6 @@
     <button class="btn" id="btn-search">Search</button>
     <hr />
     <div id="comp-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-    <hr />
-    <div style="font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
-      <p id="sidebar-proxy-help">The API is public (CORS open).</p>
-      <br/>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-        <input type="checkbox" id="use-proxy" />
-        <span id="chk-proxy-label">Local proxy (port 8765)</span>
-      </label>
-    </div>
   </aside>
 
   <main id="main-area">
@@ -540,8 +531,6 @@ const I18N = {
     menu_refresh_active: "🔄 Auto-refresh active (30s)",
     menu_refresh_last: "🔄 Last update: {when}",
     lbl_year: "Year", lbl_category: "Category", btn_search: "Search",
-    sidebar_proxy_help: "The API is public (CORS open).",
-    chk_proxy: "Local proxy (port 8765)",
     welcome: "Pick a year and category, then click Search.",
     pick_comp: "Pick a competition in the sidebar.",
     no_comps: "No competition found.",
@@ -596,8 +585,6 @@ const I18N = {
     menu_refresh_active: "🔄 Auto-refresh actif (30s)",
     menu_refresh_last: "🔄 Dernière màj : {when}",
     lbl_year: "Année", lbl_category: "Catégorie", btn_search: "Rechercher",
-    sidebar_proxy_help: "L'API est publique (CORS ouvert).",
-    chk_proxy: "Proxy local (port 8765)",
     welcome: "Sélectionnez une année et une catégorie puis cliquez sur Rechercher.",
     pick_comp: "Sélectionnez une compétition dans la barre latérale.",
     no_comps: "Aucune compétition trouvée.",
@@ -680,15 +667,12 @@ function applyStaticI18n() {
   setText("lbl-year", "lbl_year");
   setText("lbl-category", "lbl_category");
   setText("btn-search", "btn_search");
-  setText("sidebar-proxy-help", "sidebar_proxy_help");
-  setText("chk-proxy-label",    "chk_proxy");
   const we = document.getElementById("welcome-empty");
   if (we) we.textContent = t("welcome");
 }
 
 const DIRECT_BASE = "https://world-rowing-api.soticcloud.net/stats/api";
-const PROXY_BASE  = "http://127.0.0.1:8765/stats/api";
-const getBase = () => document.getElementById("use-proxy").checked ? PROXY_BASE : DIRECT_BASE;
+const getBase = () => DIRECT_BASE;
 
 // ── State ─────────────────────────────────────────────────────────────────
 let S = {

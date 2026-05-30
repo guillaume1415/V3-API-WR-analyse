@@ -686,18 +686,6 @@
       </select>
     </div>
     <button class="btn" id="btn-search">Search</button>
-    <hr />
-    <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.65;">
-      <p id="sidebar-help">Pick a year and category, then click Search.</p>
-      <br/>
-      <p id="sidebar-proxy-help">The API is public (CORS open). If errors occur, run the proxy:</p>
-      <code style="display:block; margin-top:6px;">python proxy.py</code>
-      <br/>
-      <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-        <input type="checkbox" id="use-proxy" />
-        <span id="chk-proxy-label">Use local proxy (port 8765)</span>
-      </label>
-    </div>
   </aside>
 
   <main id="main-area">
@@ -740,9 +728,6 @@ const I18N = {
     refresh_label: "Auto-refresh: 30s",
     // Sidebar
     lbl_year: "Year", lbl_category: "Category", btn_search: "Search",
-    sidebar_help: "Pick a year and category, then click Search.",
-    sidebar_proxy_help: "The API is public (CORS open). If errors occur, run the proxy:",
-    chk_proxy: "Use local proxy (port 8765)",
     // States
     welcome: "Welcome — start a search to display competitions.",
     no_comps: "No competition found for this selection.",
@@ -755,7 +740,6 @@ const I18N = {
     no_result: "No result.", no_crew: "No crew.",
     no_split: "No split.", no_split_data: "No split data available.",
     err_label: "Error",
-    err_help: "Enable \"Use local proxy\" and run",
     // Comp list
     comps_count: "{n} competition(s)",
     comps_label: "Competitions · {year} · {cat}",
@@ -827,9 +811,6 @@ const I18N = {
     menu_refresh_last: "🔄 Dernière màj : {when}",
     refresh_label: "Auto-refresh : 30s",
     lbl_year: "Année", lbl_category: "Catégorie", btn_search: "Rechercher",
-    sidebar_help: "Sélectionnez une année et une catégorie puis cliquez sur Rechercher.",
-    sidebar_proxy_help: "L'API est publique (CORS ouvert). Si des erreurs surviennent, lancez le proxy :",
-    chk_proxy: "Utiliser proxy local (port 8765)",
     welcome: "Bienvenue — lancez une recherche pour afficher les compétitions.",
     no_comps: "Aucune compétition trouvée pour cette sélection.",
     searching: "Recherche des compétitions…",
@@ -841,7 +822,6 @@ const I18N = {
     no_result: "Aucun résultat.", no_crew: "Aucun équipage.",
     no_split: "Aucun intermédiaire.", no_split_data: "Aucune donnée d'intermédiaires disponible.",
     err_label: "Erreur",
-    err_help: "Activez « Utiliser proxy local » et lancez",
     comps_count: "{n} compétition(s)",
     comps_label: "Compétitions · {year} · {cat}",
     breadcrumb_comps: "Compétitions",
@@ -939,14 +919,10 @@ function applyStaticI18n() {
   setText("lbl-year", "lbl_year");
   setText("lbl-category", "lbl_category");
   setText("btn-search", "btn_search");
-  setText("sidebar-help",       "sidebar_help");
-  setText("sidebar-proxy-help", "sidebar_proxy_help");
-  setText("chk-proxy-label",    "chk_proxy");
 }
 
 const DIRECT_BASE = "https://world-rowing-api.soticcloud.net/stats/api";
-const PROXY_BASE  = "http://127.0.0.1:8765/stats/api";
-const getBase = () => document.getElementById("use-proxy").checked ? PROXY_BASE : DIRECT_BASE;
+const getBase = () => DIRECT_BASE;
 
 // ── State ─────────────────────────────────────────────────────────────────
 let S = {
@@ -1898,8 +1874,7 @@ function render() {
   const el = document.getElementById("main-area");
 
   if (S.error) {
-    el.innerHTML = `<div class="error-box"><strong>${t("err_label")}</strong> — ${esc(S.error)}<br/><br/>
-      ${t("err_help")} <code>python proxy.py</code>.</div>`;
+    el.innerHTML = `<div class="error-box"><strong>${t("err_label")}</strong> — ${esc(S.error)}</div>`;
     return;
   }
   if (S.loadingComps) {
