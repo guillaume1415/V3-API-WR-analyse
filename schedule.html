@@ -436,6 +436,9 @@
     <a class="nav-link active" id="nav-schedule-link" href="schedule.html">
       <span class="nav-icon">📅</span><span class="nav-label" id="nav-schedule-label">Schedule</span>
     </a>
+    <a class="nav-link" id="nav-live-link" href="live.html">
+      <span class="nav-icon">📡</span><span class="nav-label" id="nav-live-label">Live</span>
+    </a>
   </nav>
 
   <div class="header-tools">
@@ -520,7 +523,7 @@ const I18N = {
   en: {
     title_schedule: "World Rowing — Schedule",
     subtitle: "Local interface · Official World Rowing API",
-    nav_results: "Results", nav_schedule: "Schedule",
+    nav_results: "Results", nav_schedule: "Schedule", nav_live: "Live",
     hdr_notifs: "Notifs",
     tt_home: "Home", tt_notifs: "Race notifications",
     tt_theme: "Light / dark mode", tt_more: "More options",
@@ -574,7 +577,7 @@ const I18N = {
   fr: {
     title_schedule: "World Rowing — Programme",
     subtitle: "Interface locale · API officielle World Rowing",
-    nav_results: "Résultats", nav_schedule: "Programme",
+    nav_results: "Résultats", nav_schedule: "Programme", nav_live: "Live",
     hdr_notifs: "Notifs",
     tt_home: "Accueil", tt_notifs: "Notifications de courses",
     tt_theme: "Mode clair / sombre", tt_more: "Plus d'options",
@@ -654,10 +657,12 @@ function applyStaticI18n() {
   setText("brand-p",  "subtitle");
   setText("nav-results-label",  "nav_results");
   setText("nav-schedule-label", "nav_schedule");
+  setText("nav-live-label",     "nav_live");
   setText("btn-notifs-label",   "hdr_notifs");
   setAttr("brand-link", "title", "tt_home");
   setAttr("nav-results-link",  "title", "nav_results");
   setAttr("nav-schedule-link", "title", "nav_schedule");
+  setAttr("nav-live-link",     "title", "nav_live");
   setAttr("btn-notif", "title", "tt_notifs");
   setAttr("btn-theme", "title", "tt_theme");
   setAttr("btn-more",  "title", "tt_more");

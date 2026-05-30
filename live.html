@@ -1,0 +1,1700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>World Rowing — Live</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #23273a;
+    --border: #2e3347;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --gold: #f59e0b;
+    --silver: #94a3b8;
+    --bronze: #cd7c3c;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --green: #10b981;
+    --red: #ef4444;
+    --radius: 8px;
+  }
+  body.light {
+    --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+    --border: #e2e8f0; --text: #1e293b; --text-muted: #64748b;
+    --accent: #2563eb; --accent-hover: #1d4ed8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100%}
+  body{display:flex;flex-direction:column;min-height:100vh}
+
+  /* ── Header standard (aligné index.html / schedule.html) ─────────────── */
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100; min-height: 58px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: inherit; flex-shrink: 0;
+  }
+  .brand .logo {
+    width: 34px; height: 34px; background: var(--accent); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .brand-text h1 { font-size: 1.05rem; font-weight: 600; line-height: 1.2; }
+  .brand-text p  { font-size: 0.72rem; color: var(--text-muted); line-height: 1.2; margin-top: 2px; }
+
+  .header-nav { display: flex; gap: 4px; align-items: center; }
+  .nav-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px; border-radius: var(--radius);
+    font-size: 0.82rem; font-weight: 500;
+    border: 1px solid var(--border); color: var(--text-muted);
+    cursor: pointer; text-decoration: none;
+    transition: border-color .15s, color .15s, background .15s;
+    white-space: nowrap;
+  }
+  .nav-link:hover  { border-color: var(--accent); color: var(--accent); }
+  .nav-link.active {
+    border-color: var(--accent); color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  }
+  .nav-icon  { font-size: 0.95rem; line-height: 1; }
+
+  .header-tools {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .refresh-status {
+    font-size: 0.7rem; color: var(--text-muted);
+    padding: 0 4px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .refresh-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted); flex-shrink: 0;
+  }
+  .refresh-dot.on { background: var(--green); animation: pulse 2s infinite; }
+  .refresh-dot.replay { background: var(--gold); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%     { opacity: .35; }
+  }
+  .hdr-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 11px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--radius);
+    font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+    white-space: nowrap; font-family: inherit; line-height: 1;
+  }
+  .hdr-btn:hover { border-color: var(--accent); color: var(--text); }
+  .hdr-btn.on {
+    border-color: var(--green); color: var(--green);
+    background: color-mix(in srgb, var(--green) 12%, var(--surface2));
+  }
+  .hdr-icon { font-size: 0.95rem; line-height: 1; }
+
+  .hdr-more {
+    display: none;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--radius);
+    padding: 6px 11px; font-size: 1.05rem; cursor: pointer;
+    line-height: 1; font-weight: 700; font-family: inherit;
+    transition: border-color .15s, color .15s;
+  }
+  .hdr-more:hover { border-color: var(--accent); color: var(--text); }
+
+  .more-menu {
+    display: none; position: fixed; top: 60px; right: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 6px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.5);
+    min-width: 220px; z-index: 99;
+    flex-direction: column; gap: 1px;
+  }
+  .more-menu.open { display: flex; }
+  .more-menu button, .more-menu a {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 10px; background: transparent; border: none;
+    color: var(--text); font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; border-radius: 5px; text-align: left;
+    font-family: inherit; text-decoration: none;
+  }
+  .more-menu button:hover, .more-menu a:hover { background: var(--surface2); }
+  .more-menu .menu-state {
+    margin-left: auto; font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text-muted);
+  }
+  .more-menu button.on .menu-state { color: var(--green); }
+  .more-menu .menu-sep { border: none; border-top: 1px solid var(--border); margin: 3px 0; }
+  .more-menu .menu-info {
+    padding: 5px 10px; font-size: 0.7rem; color: var(--text-muted); line-height: 1.3;
+  }
+
+  @media (max-width: 920px) {
+    .brand-text p { display: none; }
+    .brand-text h1 { font-size: 0.95rem; }
+    .nav-link { padding: 6px 9px; }
+  }
+  @media (max-width: 760px) {
+    header { padding: 9px 12px; gap: 8px; }
+    .brand-text { display: none; }
+    .nav-label, .hdr-lbl { display: none; }
+    .refresh-status .lbl-text { display: none; }
+    .hdr-btn { padding: 6px 9px; }
+    .nav-link { padding: 6px 9px; }
+  }
+  @media (max-width: 560px) {
+    .hdr-btn#btn-notif,
+    .refresh-status { display: none; }
+    .hdr-more { display: inline-flex; align-items: center; justify-content: center; }
+  }
+
+  /* ── Toast notifications ── */
+  .toast-container {
+    position: fixed; bottom: 16px; right: 16px; z-index: 300;
+    display: flex; flex-direction: column-reverse; gap: 8px;
+    max-width: calc(100vw - 32px); pointer-events: none;
+  }
+  .toast {
+    background: var(--surface); border: 1px solid var(--accent);
+    border-left: 4px solid var(--accent); border-radius: var(--radius);
+    padding: 12px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    width: 320px; max-width: 100%;
+    animation: toastIn .25s ease;
+    pointer-events: auto;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .toast.fade-out { animation: toastOut .3s ease forwards; }
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateX(20px); }
+  }
+  .toast-icon { font-size: 1.2rem; flex-shrink: 0; line-height: 1; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 3px; }
+  .toast-text  { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+  .toast-close {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; padding: 0 4px; font-size: 1rem; line-height: 1;
+    flex-shrink: 0;
+  }
+  .toast-close:hover { color: var(--text); }
+
+  /* ── Layout ─────────────────────────────────────────────────────────── */
+  .layout{display:flex;flex:1;min-height:0}
+  aside{
+    width:270px;flex-shrink:0;background:var(--surface);
+    border-right:1px solid var(--border);padding:20px;
+    overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+  }
+  .filter-group label{
+    display:block;font-size:0.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text-muted);margin-bottom:5px;
+  }
+  .filter-group select{
+    width:100%;background:var(--surface2);border:1px solid var(--border);
+    color:var(--text);padding:8px 10px;border-radius:var(--radius);
+    font-size:0.88rem;outline:none;font-family:inherit;
+  }
+  .filter-group select:focus{border-color:var(--accent)}
+  .btn{
+    width:100%;padding:9px;background:var(--accent);color:#fff;
+    border:none;border-radius:var(--radius);font-size:0.88rem;
+    font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit;
+  }
+  .btn:hover{background:var(--accent-hover)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  aside hr{border:none;border-top:1px solid var(--border)}
+  aside code{background:var(--surface2);padding:2px 5px;border-radius:4px;font-size:0.8rem}
+
+  main{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:20px}
+
+  /* ── Cards / race list (index.html style) ─────────────────────────── */
+  .section-title{
+    font-size:0.72rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--text-muted);
+  }
+  .breadcrumb{
+    display:flex;align-items:center;gap:6px;
+    font-size:0.83rem;color:var(--text-muted);flex-wrap:wrap;
+  }
+  .breadcrumb a{color:var(--accent);cursor:pointer}
+  .breadcrumb a:hover{text-decoration:underline}
+  .breadcrumb .sep{color:var(--border)}
+  .cards-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;
+  }
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px;cursor:pointer;
+    transition:border-color .15s,transform .1s;
+  }
+  .card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .card.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .card-title{font-weight:600;font-size:0.92rem;margin-bottom:5px}
+  .card-meta{font-size:0.78rem;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:6px}
+
+  .race-list{display:flex;flex-direction:column;gap:5px}
+  .race-item{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px 14px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;transition:border-color .15s;
+  }
+  .race-item:hover{border-color:var(--accent)}
+  .race-item.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+  .race-item-name{flex:1;font-weight:500;font-size:0.88rem}
+  .race-item-meta{font-size:0.78rem;color:var(--text-muted);white-space:nowrap}
+  .race-item .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .group-label{
+    margin:10px 0 4px;font-size:0.72rem;font-weight:700;
+    color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;
+  }
+  .class-filters{display:flex;flex-wrap:wrap;gap:6px;padding:12px 0 4px}
+  .pill{
+    padding:4px 12px;border-radius:99px;font-size:0.78rem;font-weight:500;
+    cursor:pointer;border:1px solid var(--border);
+    background:var(--surface2);color:var(--text-muted);
+    transition:border-color .15s,color .15s,background .15s;white-space:nowrap;
+  }
+  .pill:hover{border-color:var(--accent);color:var(--accent)}
+  .pill.active{
+    border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 18%,var(--surface2));
+    color:var(--accent);font-weight:600;
+  }
+
+  .loading{
+    display:flex;flex-direction:column;align-items:center;
+    gap:10px;padding:48px;color:var(--text-muted);
+  }
+  .spinner{
+    width:30px;height:30px;border:3px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .empty{padding:40px;text-align:center;color:var(--text-muted);font-size:0.88rem}
+  .error-box{
+    background:color-mix(in srgb,var(--red) 12%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--red) 40%,transparent);
+    border-radius:var(--radius);padding:14px;color:#fca5a5;font-size:0.84rem;
+  }
+
+  #tracker{display:flex;flex-direction:column;gap:14px}
+  .race-head{display:flex;gap:12px;align-items:baseline;margin-bottom:10px;flex-wrap:wrap}
+  .race-head h2{margin:0;font-size:16px}
+  .race-head .meta{color:var(--text-muted);font-size:12px}
+  .race-head .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .badge.live{background:var(--green);color:#fff}
+  .badge.replay{background:var(--gold);color:#000}
+  .badge.scheduled{background:var(--border);color:var(--text)}
+
+  table.lanes{width:100%;border-collapse:collapse;font-size:13px}
+  table.lanes th,table.lanes td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+  table.lanes th{font-size:11px;text-transform:uppercase;color:var(--text-muted);font-weight:500;background:var(--surface)}
+  table.lanes td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.lanes tr.p1 td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  .ctry{font-weight:600;font-size:14px}
+  .pos-pill{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:12px;font-weight:600;font-size:12px;background:var(--surface2);border:1px solid var(--border)}
+  .pos-pill.p1{background:var(--accent);color:#000;border-color:var(--accent)}
+  .pos-pill.p2{background:#c0c5cc;color:#000}
+  .pos-pill.p3{background:#cd7f32;color:#000}
+  .progress{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:120px;position:relative}
+  .progress > div{height:100%;background:var(--accent);transition:width .5s linear}
+  .gap{color:var(--red);font-variant-numeric:tabular-nums}
+  .gap.lead{color:var(--accent)}
+  .small{font-size:11px;color:var(--text-muted)}
+  .athletes{font-size:11px;color:var(--text-muted);max-width:280px}
+  .err{color:var(--red);padding:10px}
+  .empty-msg{padding:30px;text-align:center;color:var(--text-muted)}
+  details.inters{margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px}
+  details.inters summary{cursor:pointer;color:var(--text-muted);font-size:12px}
+  table.int{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+  table.int th,table.int td{padding:4px 6px;border-bottom:1px solid var(--border);text-align:right}
+  table.int th:first-child,table.int td:first-child{text-align:left}
+
+  /* charts */
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  @media (max-width:900px){ .charts{grid-template-columns:1fr} }
+  .chart{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;position:relative}
+  .chart.expanded{grid-column:1/-1}
+  .chart.expanded svg{height:380px}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .chart h3{margin:0;font-size:12px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+  .chart-tools{display:flex;gap:4px}
+  .chart-tools button{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:3px}
+  .chart-tools button:hover{color:var(--text);background:var(--border)}
+  .scale-edit{display:inline-flex;gap:3px;align-items:center;color:var(--text-muted);font-size:10px}
+  .scale-edit input{width:50px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:10px;padding:1px 3px;border-radius:3px;font-family:inherit}
+  .scale-edit input::-webkit-outer-spin-button,.scale-edit input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .chart-body{position:relative}
+  .chart svg{width:100%;height:200px;display:block;cursor:crosshair}
+  .chart .axis text{fill:var(--text-muted);font-size:10px}
+  .chart .axis line,.chart .axis path{stroke:var(--border);stroke-width:1;fill:none}
+  .chart .grid line{stroke:var(--border);stroke-dasharray:2,3;opacity:.4}
+  .chart .series{fill:none;stroke-width:1.8;transition:opacity .15s}
+  .chart .series.dashed{stroke-dasharray:4,3;stroke-width:1.4}
+  .chart .vline{stroke:var(--text);stroke-width:1;opacity:.6;pointer-events:none}
+  .chart .dot{fill:var(--bg);stroke-width:2;pointer-events:none}
+  .chart .zoom-rect{fill:var(--accent);opacity:.15;stroke:var(--accent);stroke-width:1;pointer-events:none}
+  .tooltip{position:absolute;background:rgba(11,13,16,.95);border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:11px;pointer-events:none;white-space:nowrap;z-index:10;line-height:1.4}
+  .tooltip .x-lbl{color:var(--text-muted);font-size:10px;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:3px}
+  .tooltip .row{display:flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+  .tooltip i{width:8px;height:8px;border-radius:1px;display:inline-block}
+  .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:11px}
+  .legend span{display:inline-flex;align-items:center;gap:4px;color:var(--text);background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:3px;cursor:pointer;user-select:none;transition:opacity .15s}
+  .legend span:hover{background:var(--border)}
+  .legend span.hidden{opacity:.35;text-decoration:line-through}
+  .legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .zoom-hint{font-size:10px;color:var(--text-muted);margin-left:6px;font-style:italic}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" id="brand-link" href="live.html" title="Home">
+    <div class="logo">📡</div>
+    <div class="brand-text">
+      <h1 id="brand-h1">World Rowing — Live</h1>
+      <p id="brand-p">Local interface · Official World Rowing API</p>
+    </div>
+  </a>
+  <nav class="header-nav">
+    <a class="nav-link" id="nav-results-link" href="index.html" title="Results">
+      <span class="nav-icon">🏆</span><span class="nav-label" id="nav-results-label">Results</span>
+    </a>
+    <a class="nav-link" id="nav-schedule-link" href="schedule.html" title="Schedule">
+      <span class="nav-icon">📅</span><span class="nav-label" id="nav-schedule-label">Schedule</span>
+    </a>
+    <a class="nav-link active" id="nav-live-link" href="live.html" title="Live">
+      <span class="nav-icon">📡</span><span class="nav-label" id="nav-live-label">Live</span>
+    </a>
+  </nav>
+  <div class="header-tools">
+    <span class="refresh-status" id="refresh-status" title="Live status">
+      <span class="refresh-dot" id="refresh-dot"></span>
+      <span class="lbl-text" id="refresh-label">—</span>
+    </span>
+    <button class="hdr-btn" id="btn-notif" onclick="toggleNotifications()" title="Notifications">
+      <span class="hdr-icon">🔔</span><span class="hdr-lbl" id="btn-notifs-label">Notifs</span>
+    </button>
+    <button class="hdr-btn" id="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+      <span class="hdr-icon" id="theme-icon">🌙</span>
+    </button>
+    <button class="hdr-btn" id="btn-lang" onclick="toggleLang()" title="Language">
+      <span class="hdr-icon" id="lang-icon">EN</span>
+    </button>
+    <button class="hdr-more" id="btn-more" onclick="toggleMoreMenu(event)" title="More">⋯</button>
+  </div>
+  <div class="more-menu" id="more-menu">
+    <button id="menu-btn-notif" onclick="toggleNotifications()">
+      <span>🔔</span><span id="menu-notifs-label">Notifications</span>
+      <span class="menu-state" id="menu-notif-state">OFF</span>
+    </button>
+    <hr class="menu-sep"/>
+    <div class="menu-info" id="menu-fav-info">No favorite nation</div>
+    <hr class="menu-sep"/>
+    <div class="menu-info" id="menu-refresh-info">—</div>
+  </div>
+</header>
+<div class="toast-container" id="toast-container"></div>
+
+<div class="layout">
+  <aside>
+    <div class="filter-group">
+      <label id="lbl-year">Year</label>
+      <select id="sel-year"></select>
+    </div>
+    <div class="filter-group">
+      <label id="lbl-category">Category</label>
+      <select id="sel-category">
+        <option value="World Rowing Championships">World Rowing Championships</option>
+        <option value="World Rowing Under 19 Championships">World Rowing Under 19 Championships</option>
+        <option value="World Rowing Under 23 Championships">World Rowing Under 23 Championships</option>
+        <option value="World Rowing Cup" selected>World Rowing Cup</option>
+        <option value="Olympics">Olympics</option>
+        <option value="Paralympics">Paralympics</option>
+        <option value="Continental Championships">Continental Championships</option>
+        <option value="International Regattas">International Regattas</option>
+      </select>
+    </div>
+    <button class="btn" id="btn-search">Search</button>
+  </aside>
+
+  <main id="main-area">
+    <div class="empty" id="welcome-msg">Pick a year and category, then click Search.</div>
+  </main>
+</div>
+
+<script>
+const POLL_MS = 3000;
+
+const $ = id => document.getElementById(id);
+
+// ── i18n ──────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    title_live: "World Rowing — Live",
+    subtitle: "Local interface · Official World Rowing API",
+    nav_results: "Results", nav_schedule: "Schedule", nav_live: "Live",
+    hdr_notifs: "Notifs",
+    tt_home: "Home", tt_notifs: "Notifications", tt_theme: "Toggle theme",
+    tt_more: "More", tt_lang: "Language", tt_refresh: "Live status",
+    menu_notifs: "Notifications",
+    menu_no_fav: "No favorite nation",
+    menu_fav: "Favorite: {nation}",
+    menu_status_idle: "Open a race to start the live tracker",
+    menu_status_live: "Live tracker active · {when}",
+    menu_status_replay: "Replay tracker · {when}",
+    menu_status_error: "Error: {msg}",
+    lbl_year: "Year", lbl_category: "Category", btn_search: "Search",
+    welcome: "Pick a year and category, then click Search.",
+    searching: "Searching competitions…",
+    no_comps: "No competitions found for this selection.",
+    loading_races: "Loading races…",
+    no_races: "No races found.",
+    loading_tracker: "Connecting to live tracker…",
+    no_live_data: "No live data available for this race.",
+    err_label: "Error",
+    breadcrumb_comps: "Competitions",
+    comps_label: "Competitions · {year} · {cat}",
+    comps_count: "{n} competition(s)",
+    races_count: "Races ({n})",
+    all: "All",
+    leader_label: "LEADER",
+    inters_title: "Intermediates",
+    hdr_pos: "Pos", hdr_lane: "Lane", hdr_country: "Country",
+    hdr_progress: "Progress", hdr_distance: "Distance", hdr_speed: "Speed",
+    hdr_split: "Split", hdr_cadence: "Cadence", hdr_gap_leader: "Gap to leader",
+    hdr_final_time: "Final time", hdr_crew: "Crew",
+    chart_speed: "Speed (m/s)",
+    chart_cadence: "Cadence (strokes/min)",
+    chart_rank: "Rank",
+    chart_gap: "Gap to leader (m)",
+    chart_dual: "Speed × Cadence (correlation)",
+    spec_speed: "Speed (m/s)",
+    spec_cadence: "Cadence (s/m)",
+    spec_rank: "Rank",
+    spec_gap: "Gap (m)",
+    tt_expand: "Expand", tt_collapse: "Collapse",
+    tt_reset_zoom: "Reset zoom", tt_reset_y: "Reset Y scale",
+    tt_ymin: "Y minimum", tt_ymax: "Y maximum",
+    status_live: "LIVE", status_replay: "replay",
+    status_ready: "—", status_error: "error",
+    ago_sec: "{n}s ago", ago_min: "{n}m ago", ago_hour: "{n}h ago",
+    notif_title: "🚣 {nation} — race in 5 min",
+    notif_no_browser: "Your browser does not support notifications.",
+  },
+  fr: {
+    title_live: "World Rowing — Live",
+    subtitle: "Interface locale · API officielle World Rowing",
+    nav_results: "Résultats", nav_schedule: "Programme", nav_live: "Live",
+    hdr_notifs: "Notifs",
+    tt_home: "Accueil", tt_notifs: "Notifications", tt_theme: "Changer le thème",
+    tt_more: "Plus", tt_lang: "Langue", tt_refresh: "Statut live",
+    menu_notifs: "Notifications",
+    menu_no_fav: "Aucune nation favorite",
+    menu_fav: "Favori : {nation}",
+    menu_status_idle: "Ouvrir une course pour lancer le live tracker",
+    menu_status_live: "Tracker live actif · {when}",
+    menu_status_replay: "Tracker replay · {when}",
+    menu_status_error: "Erreur : {msg}",
+    lbl_year: "Année", lbl_category: "Catégorie", btn_search: "Rechercher",
+    welcome: "Sélectionnez une année et une catégorie, puis cliquez sur Rechercher.",
+    searching: "Recherche des compétitions…",
+    no_comps: "Aucune compétition trouvée pour cette sélection.",
+    loading_races: "Chargement des courses…",
+    no_races: "Aucune course trouvée.",
+    loading_tracker: "Connexion au live tracker…",
+    no_live_data: "Pas de données live disponibles pour cette course.",
+    err_label: "Erreur",
+    breadcrumb_comps: "Compétitions",
+    comps_label: "Compétitions · {year} · {cat}",
+    comps_count: "{n} compétition(s)",
+    races_count: "Courses ({n})",
+    all: "Toutes",
+    leader_label: "LEADER",
+    inters_title: "Intermédiaires",
+    hdr_pos: "Pos", hdr_lane: "Couloir", hdr_country: "Pays",
+    hdr_progress: "Progression", hdr_distance: "Distance", hdr_speed: "Vitesse",
+    hdr_split: "Split", hdr_cadence: "Cadence", hdr_gap_leader: "Écart leader",
+    hdr_final_time: "Temps final", hdr_crew: "Équipage",
+    chart_speed: "Vitesse (m/s)",
+    chart_cadence: "Cadence (coups/min)",
+    chart_rank: "Classement",
+    chart_gap: "Écart au leader (m)",
+    chart_dual: "Vitesse × Cadence (corrélation)",
+    spec_speed: "Vitesse (m/s)",
+    spec_cadence: "Cadence (s/m)",
+    spec_rank: "Rang",
+    spec_gap: "Écart (m)",
+    tt_expand: "Agrandir", tt_collapse: "Réduire",
+    tt_reset_zoom: "Réinitialiser le zoom", tt_reset_y: "Réinitialiser l'échelle Y",
+    tt_ymin: "Y minimum", tt_ymax: "Y maximum",
+    status_live: "LIVE", status_replay: "replay",
+    status_ready: "—", status_error: "erreur",
+    ago_sec: "il y a {n} s", ago_min: "il y a {n} min", ago_hour: "il y a {n} h",
+    notif_title: "🚣 {nation} — course dans 5 min",
+    notif_no_browser: "Votre navigateur ne supporte pas les notifications.",
+  },
+};
+const getLang = () => localStorage.getItem("wr-lang") || "en";
+function t(key, params) {
+  const dict = I18N[getLang()] || I18N.en;
+  let s = dict[key] ?? I18N.en[key] ?? key;
+  if (params) for (const [k, v] of Object.entries(params)) {
+    s = s.split("{" + k + "}").join(String(v));
+  }
+  return s;
+}
+function setLang(lang) {
+  localStorage.setItem("wr-lang", lang);
+  applyStaticI18n();
+  if (typeof render === "function") render();
+  if (typeof renderMoreMenu === "function") renderMoreMenu();
+  if (typeof updateLiveStatus === "function") updateLiveStatus();
+  $("lang-icon").textContent = lang.toUpperCase();
+}
+function toggleLang() { setLang(getLang() === "en" ? "fr" : "en"); }
+function applyStaticI18n() {
+  const lang = getLang();
+  document.documentElement.lang = lang;
+  document.title = t("title_live");
+  const setText = (id, key) => { const el = $(id); if (el) el.textContent = t(key); };
+  const setAttr = (id, attr, key) => { const el = $(id); if (el) el.setAttribute(attr, t(key)); };
+  setText("brand-h1", "title_live");
+  setText("brand-p",  "subtitle");
+  setText("nav-results-label",  "nav_results");
+  setText("nav-schedule-label", "nav_schedule");
+  setText("nav-live-label",     "nav_live");
+  setText("btn-notifs-label",   "hdr_notifs");
+  setAttr("brand-link", "title", "tt_home");
+  setAttr("nav-results-link",  "title", "nav_results");
+  setAttr("nav-schedule-link", "title", "nav_schedule");
+  setAttr("nav-live-link",     "title", "nav_live");
+  setAttr("btn-notif", "title", "tt_notifs");
+  setAttr("btn-theme", "title", "tt_theme");
+  setAttr("btn-more",  "title", "tt_more");
+  setAttr("btn-lang",  "title", "tt_lang");
+  setAttr("refresh-status", "title", "tt_refresh");
+  setText("menu-notifs-label", "menu_notifs");
+  setText("lbl-year", "lbl_year");
+  setText("lbl-category", "lbl_category");
+  setText("btn-search", "btn_search");
+  const we = $("welcome-msg");
+  if (we) we.textContent = t("welcome");
+}
+
+// ── API ───────────────────────────────────────────────────────────────
+const DIRECT_BASE = "https://world-rowing-api.soticcloud.net/stats/api";
+const getBase = () => DIRECT_BASE;
+
+const state = {
+  year: new Date().getFullYear(), category: "World Rowing Cup",
+  searched: false, loadingComps: false, error: null,
+  competitions: [],
+  selectedComp: null, races: [], loadingRaces: false, classFilter: null,
+  selectedRace: null,
+  pollTimer: null, currentTrackerType: null, lastData: null,
+  lastUpdate: null, lastError: null,
+  hiddenLanes: new Set(),
+  expandedChart: null,
+  xZoom: null,
+  yScales: {},
+};
+
+// ── Notifications state ───────────────────────────────────────────────
+let N = {
+  on: false,
+  intervalId: null,
+  shownToday: new Set(),
+};
+
+function getFavNation() { return localStorage.getItem("wr-fav-nation") || null; }
+
+async function apiFetch(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+async function api(path){ return apiFetch(getBase()+path); }
+
+function buildUrl(path, params){
+  const parts = [];
+  for(const [k,v] of Object.entries(params)){
+    if(v==null) continue;
+    parts.push(encodeURIComponent(k)+"="+encodeURIComponent(v));
+  }
+  return getBase() + path + (parts.length?"?"+parts.join("&"):"");
+}
+
+// ── high-level API (same shape as index.html) ─────────────────────────
+async function apiCompetitions(year, category){
+  const url = buildUrl("/competition", {
+    "filter[StartDate]": `${year}-12-31T23:59:59.000Z`,
+    "filter[competitionType.competitionCategory.DisplayName]": category,
+    "filterOptions[StartDate]": "lessThanEqualTo",
+    "include": "competitionType,competitionType.competitionCategory,venue,venue.country",
+    "sort[StartDate]": "desc",
+  });
+  const payload = await apiFetch(url);
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  return data.filter(c => String(c.StartDate || "").startsWith(String(year)));
+}
+async function apiRaces(competitionId){
+  const url = buildUrl("/race/", {
+    "include": "raceStatus,racePhase,event.boatClass,raceBoats",
+    "filter[event.competitionId]": competitionId,
+    "sort[date]": "asc",
+    "PageSize": 500,
+  });
+  const payload = await apiFetch(url);
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+// ── small helpers ─────────────────────────────────────────────────────
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getLocale() { return getLang() === "fr" ? "fr-FR" : "en-GB"; }
+function fmtDate(d){
+  if(!d) return "—";
+  const dt = new Date(d);
+  if(isNaN(dt)) return String(d).slice(0,10);
+  return dt.toLocaleDateString(getLocale(),{day:"2-digit",month:"short",year:"numeric"});
+}
+function renderLoading(msg){ return `<div class="loading"><div class="spinner"></div>${esc(msg)}</div>`; }
+
+// ── live tracker fetch & render ────────────────────────────────────────
+async function fetchTracker(raceId, trackerType){
+  const path = `/livetracker/${trackerType==="Live"?"live/":""}${raceId}`;
+  const d = await api(path);
+  return d.data;
+}
+
+function fmtResultTime(t){
+  if(!t) return "—";
+  // "00:06:48.08" → "6:48.08"
+  let s = t.replace(/^00:/,"");
+  return s;
+}
+function fmtClockTime(dateString) {
+  if (!dateString) return "—";
+  try {
+    return new Date(dateString).toLocaleTimeString(getLocale(), {hour:"2-digit", minute:"2-digit"});
+  } catch { return "—"; }
+}
+function fmtMS(t){
+  if(t==null) return "—";
+  return t.toFixed(1)+" m/s";
+}
+function fmtSplit(metrePerSecond){
+  if(!metrePerSecond || metrePerSecond<=0) return "—";
+  const sec500 = 500 / metrePerSecond;
+  const m = Math.floor(sec500/60), s = sec500-m*60;
+  return `${m}:${s.toFixed(1).padStart(4,"0")}/500`;
+}
+
+// ── SVG charts ─────────────────────────────────────────────────────────
+const LANE_COLORS = ["#ff6b6b","#4dd0a8","#ffb454","#5da7f7","#c084fc","#ec4899","#facc15","#22d3ee"];
+function laneColor(lane, idx){ return LANE_COLORS[((lane.Lane||idx+1)-1) % LANE_COLORS.length]; }
+
+function laneSeries(lane, getY){
+  return (lane.live||[])
+    .map(p => {
+      const t = p.raceBoatTracker || {};
+      const x = t.distanceTravelled;
+      const y = getY(t, p);
+      return (x!=null && y!=null && isFinite(y)) ? {x, y} : null;
+    })
+    .filter(Boolean)
+    .sort((a,b)=> a.x-b.x);
+}
+
+// Global cache of chart series data — used by hover handler.
+// Structure: { [chartId]: { specs:[{getY,yLabel,fmt,dashed?}], series:[{lane,color,points,specIdx}], xMin, xMax, yMin, yMax, PAD_L, PAD_R, W, H, axes:[{side:'left'|'right', yMin, yMax, fmt}] } }
+const chartCache = {};
+
+const CHART_DIM = { W:520, H:200, PAD_L:36, PAD_R:46, PAD_T:8, PAD_B:22 };
+
+function gridSVG(xMin, xMax, yMin, yMax, opts, dim){
+  const {W,H,PAD_L,PAD_R,PAD_T,PAD_B} = dim;
+  const sx = x => PAD_L + ((x-xMin)/(xMax-xMin))*(W-PAD_L-PAD_R);
+  const sy = y => PAD_T + ((y-yMin)/(yMax-yMin))*(H-PAD_T-PAD_B);
+  const yTicks = opts.yTicks || 4;
+  const yStep = (yMax-yMin)/yTicks;
+  let g = "";
+  for(let i=0;i<=yTicks;i++){
+    const yv = yMin + yStep*i;
+    const py = sy(yv);
+    g += `<line x1="${PAD_L}" y1="${py.toFixed(1)}" x2="${W-PAD_R}" y2="${py.toFixed(1)}"/>`;
+    g += `<text x="${PAD_L-4}" y="${(py+3).toFixed(1)}" text-anchor="end" style="fill:var(--text-muted);font-size:10px">${opts.yFmt?opts.yFmt(yv):yv.toFixed(opts.yDec??1)}</text>`;
+  }
+  // x ticks every 500m within visible range, plus boundaries
+  const xStep = (xMax-xMin) > 1500 ? 500 : (xMax-xMin) > 500 ? 250 : 100;
+  const xStart = Math.ceil(xMin/xStep)*xStep;
+  for(let xv=xStart; xv<=xMax; xv+=xStep){
+    const px = sx(xv);
+    g += `<line x1="${px.toFixed(1)}" y1="${PAD_T}" x2="${px.toFixed(1)}" y2="${H-PAD_B}"/>`;
+    g += `<text x="${px.toFixed(1)}" y="${H-PAD_B+12}" text-anchor="middle" style="fill:var(--text-muted);font-size:10px">${xv}</text>`;
+  }
+  return g;
+}
+
+// Generic chart with one or more metric "specs" (for the dual chart)
+function makeChart(chartId, title, lanes, specs, opts={}){
+  // specs: [{getY, label, fmt, yMin?, yMax?, yDec?, yFmt?, yTicks?, invertY?, dashed?}]
+  // For multi-spec dual axis: spec[0]=left axis, spec[1]=right axis
+  const dim = {...CHART_DIM};
+  const xMin = opts.xMin ?? 0;
+  const xMax = opts.xMax ?? 2000;
+  const expanded = state.expandedChart === chartId;
+
+  // user scale overrides (only for single-axis charts)
+  const userScale = (specs.length===1) ? (state.yScales[chartId] || null) : null;
+
+  // Compute per-spec y range (only over points in [xMin,xMax])
+  const axes = specs.map((sp, si) => {
+    const ys = [];
+    for(const l of lanes){
+      if(state.hiddenLanes.has(l.id)) continue;
+      for(const p of laneSeries(l, sp.getY)){
+        if(p.x>=xMin && p.x<=xMax) ys.push(p.y);
+      }
+    }
+    // priority: user override > spec default > auto
+    let yMin = (userScale && userScale.yMin!=null) ? userScale.yMin
+             : (sp.yMin!=null ? sp.yMin : (ys.length?Math.min(...ys):0));
+    let yMax = (userScale && userScale.yMax!=null) ? userScale.yMax
+             : (sp.yMax!=null ? sp.yMax : (ys.length?Math.max(...ys):1));
+    if(sp.invertY) [yMin,yMax]=[yMax,yMin];
+    if(yMin===yMax) yMax = yMin + 1;
+    return {yMin, yMax, fmt: sp.fmt, yDec: sp.yDec, yFmt: sp.yFmt, yTicks: sp.yTicks, label: sp.label, invertY: sp.invertY};
+  });
+
+  // Build series list
+  const series = [];
+  for(const l of lanes){
+    if(state.hiddenLanes.has(l.id)) continue;
+    specs.forEach((sp, si) => {
+      const pts = laneSeries(l, sp.getY).filter(p => p.x>=xMin && p.x<=xMax);
+      if(pts.length>=2) series.push({lane:l, color:laneColor(l,0), points:pts, specIdx:si, dashed: sp.dashed});
+    });
+  }
+
+  // Cache for hover
+  chartCache[chartId] = {specs, axes, lanes, series, xMin, xMax, dim, opts};
+
+  const {W,H,PAD_L,PAD_R,PAD_T,PAD_B} = dim;
+  const sxLocal = x => PAD_L + ((x-xMin)/(xMax-xMin))*(W-PAD_L-PAD_R);
+  const syLocal = (y, axisIdx) => {
+    const a = axes[axisIdx];
+    return PAD_T + ((y-a.yMin)/(a.yMax-a.yMin))*(H-PAD_T-PAD_B);
+  };
+
+  // Grid + left axis from spec 0
+  let grid = "";
+  // y grid + labels from axis 0 (left)
+  const a0 = axes[0];
+  const yTicks0 = a0.yTicks || 4;
+  for(let i=0;i<=yTicks0;i++){
+    const yv = a0.yMin + (a0.yMax-a0.yMin)*i/yTicks0;
+    const py = syLocal(yv, 0);
+    grid += `<line x1="${PAD_L}" y1="${py.toFixed(1)}" x2="${W-PAD_R}" y2="${py.toFixed(1)}"/>`;
+    grid += `<text x="${PAD_L-4}" y="${(py+3).toFixed(1)}" text-anchor="end" style="fill:var(--text-muted);font-size:10px">${a0.yFmt?a0.yFmt(yv):yv.toFixed(a0.yDec??1)}</text>`;
+  }
+  // right axis (spec 1) if dual
+  if(axes[1]){
+    const a1 = axes[1];
+    const yTicks1 = a1.yTicks || 4;
+    for(let i=0;i<=yTicks1;i++){
+      const yv = a1.yMin + (a1.yMax-a1.yMin)*i/yTicks1;
+      const py = syLocal(yv, 1);
+      grid += `<text x="${W-PAD_R+4}" y="${(py+3).toFixed(1)}" text-anchor="start" style="fill:var(--text-muted);font-size:10px">${a1.yFmt?a1.yFmt(yv):yv.toFixed(a1.yDec??1)}</text>`;
+    }
+  }
+  // x ticks
+  const xStep = (xMax-xMin) > 1500 ? 500 : (xMax-xMin) > 500 ? 250 : 100;
+  const xStart = Math.ceil(xMin/xStep)*xStep;
+  for(let xv=xStart; xv<=xMax; xv+=xStep){
+    const px = sxLocal(xv);
+    grid += `<line x1="${px.toFixed(1)}" y1="${PAD_T}" x2="${px.toFixed(1)}" y2="${H-PAD_B}"/>`;
+    grid += `<text x="${px.toFixed(1)}" y="${H-PAD_B+12}" text-anchor="middle" style="fill:var(--text-muted);font-size:10px">${xv}</text>`;
+  }
+
+  // polylines
+  let lines = "";
+  for(const s of series){
+    const pts = s.points.map(p => `${sxLocal(p.x).toFixed(1)},${syLocal(p.y, s.specIdx).toFixed(1)}`).join(" ");
+    const cls = "series" + (s.dashed?" dashed":"");
+    lines += `<polyline class="${cls}" stroke="${s.color}" points="${pts}" data-lane-id="${s.lane.id}" data-spec-idx="${s.specIdx}"><title>${s.lane.DisplayName} — ${specs[s.specIdx].label}</title></polyline>`;
+  }
+
+  // legend (per lane, not per series — toggles whole lane across all specs)
+  const seenLanes = new Set();
+  const legendItems = [];
+  for(const l of lanes){
+    if(seenLanes.has(l.id)) continue;
+    seenLanes.add(l.id);
+    const hidden = state.hiddenLanes.has(l.id);
+    legendItems.push(`<span class="${hidden?'hidden':''}" data-lane-id="${l.id}"><i style="background:${laneColor(l,0)}"></i>${l.DisplayName}</span>`);
+  }
+  // For dual chart, add legend for line styles
+  let styleLegend = "";
+  if(specs.length>1){
+    styleLegend = `<span style="cursor:default;background:transparent;border:none"><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--text)" stroke-width="1.8"/></svg> ${specs[0].label}</span>` +
+                  `<span style="cursor:default;background:transparent;border:none"><svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="var(--text)" stroke-width="1.4" stroke-dasharray="4,3"/></svg> ${specs[1].label}</span>`;
+  }
+
+  const expandBtn = `<button data-action="expand" data-chart-id="${chartId}" title="${expanded?t("tt_collapse"):t("tt_expand")}">⛶</button>`;
+  const zoomBtn = (state.xZoom ? `<button data-action="reset-zoom" data-chart-id="${chartId}" title="${t("tt_reset_zoom")}">↺</button>` : "");
+  let scaleInputs = "";
+  if(opts.scaleEditable && specs.length===1){
+    const a = axes[0];
+    const dataMin = a.invertY ? a.yMax : a.yMin;
+    const dataMax = a.invertY ? a.yMin : a.yMax;
+    const hasOverride = userScale && (userScale.yMin!=null || userScale.yMax!=null);
+    scaleInputs = `<span class="scale-edit">
+        y: <input type="number" step="0.1" value="${dataMin}" data-action="set-ymin" data-chart-id="${chartId}" title="${t("tt_ymin")}">
+        <input type="number" step="0.1" value="${dataMax}" data-action="set-ymax" data-chart-id="${chartId}" title="${t("tt_ymax")}">
+        ${hasOverride?`<button data-action="reset-scale" data-chart-id="${chartId}" title="${t("tt_reset_y")}">↺y</button>`:''}
+      </span>`;
+  }
+
+  return `<div class="chart${expanded?' expanded':''}" data-chart-id="${chartId}">
+    <div class="chart-head">
+      <h3>${title}${state.xZoom?` <span class="zoom-hint">[${state.xZoom.min}–${state.xZoom.max}m]</span>`:''}</h3>
+      <div class="chart-tools">${scaleInputs}${zoomBtn}${expandBtn}</div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" data-chart-id="${chartId}">
+        <g class="grid">${grid}</g>
+        ${lines}
+        <g class="cursor" style="display:none">
+          <line class="vline" y1="${PAD_T}" y2="${H-PAD_B}"/>
+          <g class="dots"></g>
+        </g>
+        <rect class="zoom-rect" style="display:none" y="${PAD_T}" height="${H-PAD_T-PAD_B}"/>
+      </svg>
+      <div class="tooltip" style="display:none"></div>
+    </div>
+    <div class="legend">${legendItems.join("")}${styleLegend}</div>
+  </div>`;
+}
+
+// ── top-level render ─────────────────────────────────────────────────
+function render(){
+  const m = $("main-area");
+  if(state.error){
+    m.innerHTML = `<div class="error-box"><strong>${t("err_label")}</strong> — ${esc(state.error)}</div>`;
+    return;
+  }
+  if(state.loadingComps){ m.innerHTML = renderLoading(t("searching")); return; }
+  if(!state.searched){
+    m.innerHTML = `<div class="empty">${t("welcome")}</div>`;
+    return;
+  }
+  if(!state.competitions.length){
+    m.innerHTML = `<div class="empty">${t("no_comps")}</div>`;
+    return;
+  }
+  if(!state.selectedComp){ m.innerHTML = renderCompList(); return; }
+  if(!state.selectedRace){ m.innerHTML = renderRaceList(); return; }
+
+  // race view
+  let html = `<div class="breadcrumb">
+    <a onclick="backToComps()">${t("breadcrumb_comps")}</a>
+    <span class="sep">›</span>
+    <a onclick="backToRaces()">${esc(state.selectedComp.DisplayName||"")}</a>
+    <span class="sep">›</span>
+    <span>${esc(state.selectedRace.DisplayName||"")}</span>
+  </div>`;
+  if(!state.lastData) html += renderLoading(t("loading_tracker"));
+  else html += renderTrackerHTML(state.lastData);
+  m.innerHTML = html;
+  if(state.lastData) attachChartHandlers();
+}
+
+function renderCompList(){
+  let html = `<div>
+    <div class="section-title">${esc(t("comps_label",{year:state.year,cat:state.category}))}</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">${esc(t("comps_count",{n:state.competitions.length}))}</div>
+  </div>
+  <div class="cards-grid">`;
+  for(const c of state.competitions){
+    const venue = c.venue?.DisplayName || "—";
+    const country = c.venue?.country?.DisplayName || "";
+    const start = fmtDate(c.StartDate);
+    const end = fmtDate(c.EndDate);
+    html += `<div class="card" onclick="selectComp('${c.id}')">
+      <div class="card-title">${esc(c.DisplayName||c.CompetitionCode||c.id)}</div>
+      <div class="card-meta">
+        <span>📍 ${esc(venue)}${country?", "+esc(country):""}</span>
+        <span>📅 ${start}${end && end!==start?" → "+end:""}</span>
+      </div>
+    </div>`;
+  }
+  return html + `</div>`;
+}
+
+function renderRaceList(){
+  let html = `<div class="breadcrumb">
+    <a onclick="backToComps()">${t("breadcrumb_comps")}</a>
+    <span class="sep">›</span>
+    <span>${esc(state.selectedComp.DisplayName||"")}</span>
+  </div>`;
+  if(state.loadingRaces) return html + renderLoading(t("loading_races"));
+  if(!state.races.length) return html + `<div class="empty">${t("no_races")}</div>`;
+
+  const classes = [...new Set(state.races.map(r => r.event?.boatClass?.DisplayName || "—"))];
+  html += `<div><div class="section-title">${esc(t("races_count",{n:state.races.length}))}</div></div>`;
+  if(classes.length > 1){
+    html += `<div class="class-filters">
+      <div class="pill ${!state.classFilter?'active':''}" onclick="setClassFilter(null)">${t("all")}</div>
+      ${classes.map(c => `<div class="pill ${state.classFilter===c?'active':''}" onclick="setClassFilter('${esc(c)}')">${esc(c)}</div>`).join("")}
+    </div>`;
+  }
+  // group by date
+  const byDate = {};
+  for(const r of state.races){
+    if(state.classFilter && (r.event?.boatClass?.DisplayName||"Autre") !== state.classFilter) continue;
+    const d = (r.DateString||"").slice(0,10) || "—";
+    (byDate[d] = byDate[d] || []).push(r);
+  }
+  html += `<div class="race-list">`;
+  for(const date of Object.keys(byDate).sort()){
+    html += `<div class="group-label">${fmtDate(date)}</div>`;
+    for(const r of byDate[date]){
+      const cls = r.event?.boatClass?.DisplayName || "";
+      const phase = r.racePhase?.DisplayName || "";
+      // Extrait le suffixe (numéro de heat, lettre de finale, etc.) depuis le nom complet de la course
+      // Ex: "Men's Pair Heat 1" + phase "Heat" → suffixe "1" → label "Heat 1"
+      let phaseLabel = phase;
+      const full = r.DisplayName || "";
+      if(phase){
+        const m = full.match(new RegExp(phase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + "\\s+([A-Z0-9]+)\\b", "i"));
+        if(m) phaseLabel = `${phase} ${m[1]}`;
+      } else if(full){
+        // fallback : tente d'extraire la fin du DisplayName après le boat class
+        const after = cls && full.startsWith(cls) ? full.slice(cls.length).trim() : full;
+        phaseLabel = after;
+      }
+      const st = r.raceStatus?.DisplayName || "—";
+      const stClass = /live/i.test(st)?"live":/finished|official/i.test(st)?"replay":"scheduled";
+      const time = (r.DateString||"").slice(11,16);
+      html += `<div class="race-item" onclick="selectRace('${r.id}')">
+        <span class="race-item-name">${esc(cls)} · ${esc(phaseLabel)}</span>
+        <span class="race-item-meta">${time}</span>
+        <span class="badge ${stClass}">${esc(st)}</span>
+      </div>`;
+    }
+  }
+  return html + `</div>`;
+}
+
+function renderTrackerHTML(data){
+  if(!data || !data.config) return `<div class="error-box">${t("no_live_data")}</div>`;
+  const cfg = data.config;
+  const race = cfg.race || {};
+  const plot = cfg.plot || {};
+  const lanes = (cfg.lanes||[]).slice().sort((a,b)=> (a.Lane||99)-(b.Lane||99));
+  const totalLength = plot.totalLength || 2000;
+
+  // Sort by current position for display priority
+  const ranked = lanes.slice().sort((a,b)=>{
+    const ap = a.currentPoint?.raceBoatTracker?.currentPosition || 99;
+    const bp = b.currentPoint?.raceBoatTracker?.currentPosition || 99;
+    return ap-bp;
+  });
+
+  const statusName = race.raceStatus?.DisplayName || "—";
+  const statusClass = /live/i.test(statusName) ? "live" : /finished|official/i.test(statusName) ? "replay" : "scheduled";
+
+  const cls = race.event?.boatClass?.DisplayName || race.event?.DisplayName || "";
+
+  let html = `
+    <div class="race-head">
+      <h2>${race.DisplayName||""}</h2>
+      <span class="meta">${cls}</span>
+      <span class="badge ${statusClass}">${statusName}</span>
+      <span class="meta">${(race.DateString||"").slice(0,16).replace("T"," ")}</span>
+    </div>
+    <table class="lanes">
+      <thead>
+        <tr>
+          <th>${t("hdr_pos")}</th><th>${t("hdr_lane")}</th><th>${t("hdr_country")}</th>
+          <th>${t("hdr_progress")}</th>
+          <th class="num">${t("hdr_distance")}</th>
+          <th class="num">${t("hdr_speed")}</th>
+          <th class="num">${t("hdr_split")}</th>
+          <th class="num">${t("hdr_cadence")}</th>
+          <th class="num">${t("hdr_gap_leader")}</th>
+          <th class="num">${t("hdr_final_time")}</th>
+          <th>${t("hdr_crew")}</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  for(const lane of ranked){
+    const cp = lane.currentPoint?.raceBoatTracker || {};
+    const pos = cp.currentPosition;
+    const dist = cp.distanceTravelled || 0;
+    const pct = Math.min(100, (dist/totalLength)*100);
+    const ms = cp.metrePerSecond;
+    const stroke = cp.strokeRate;
+    const gap = cp.distanceFromLeader;
+    const athletes = (lane.raceBoatAthletes||[]).map(a => a.person?._name || a.person?.DisplayName).filter(Boolean).join(" / ");
+    const ctryName = lane.country?.DisplayName || "";
+    const posClass = pos===1?"p1":pos===2?"p2":pos===3?"p3":"";
+    const rowClass = pos===1?"p1":"";
+
+    html += `
+      <tr class="${rowClass}">
+        <td><span class="pos-pill ${posClass}">${pos||"—"}</span></td>
+        <td class="num">${lane.Lane||""}</td>
+        <td><span class="ctry">${lane.DisplayName||"?"}</span><div class="small">${ctryName}</div></td>
+        <td><div class="progress" title="${dist}m / ${totalLength}m"><div style="width:${pct}%"></div></div><div class="small">${Math.round(pct)}%</div></td>
+        <td class="num">${dist} m</td>
+        <td class="num">${fmtMS(ms)}</td>
+        <td class="num">${fmtSplit(ms)}</td>
+        <td class="num">${stroke ? stroke+" s/m" : "—"}</td>
+        <td class="num ${gap===0?"gap lead":"gap"}">${gap==null?"—":(gap===0?t("leader_label"):"-"+gap+"m")}</td>
+        <td class="num">${fmtResultTime(lane.ResultTime)}</td>
+        <td class="athletes">${athletes}</td>
+      </tr>`;
+  }
+  html += `</tbody></table>`;
+
+  // Intermediates table
+  const interDistances = new Set();
+  lanes.forEach(l => (l.intermediates||[]).forEach(i => interDistances.add(i.distance?.DisplayName)));
+  const dists = Array.from(interDistances).filter(Boolean).sort((a,b)=> parseInt(a.replace(/\D/g,""))-parseInt(b.replace(/\D/g,"")));
+  if(dists.length){
+    html += `<details class="inters" open><summary>${t("inters_title")}</summary><table class="int"><thead><tr><th>${t("hdr_country")}</th>`;
+    dists.forEach(d => html += `<th>${d.replace(/^d|m$/g,"")}m</th>`);
+    html += `</tr></thead><tbody>`;
+    for(const lane of ranked){
+      html += `<tr><td>${lane.DisplayName}</td>`;
+      const byDist = {};
+      (lane.intermediates||[]).forEach(i => byDist[i.distance?.DisplayName] = i);
+      dists.forEach(d => {
+        const i = byDist[d];
+        html += `<td>${i ? `${fmtResultTime(i.ResultTime)} <span class="small">(${i.Rank})${i.Difference&&i.Difference!=="+0.00"?" "+i.Difference:""}</span>` : "—"}</td>`;
+      });
+      html += `</tr>`;
+    }
+    html += `</tbody></table></details>`;
+  }
+
+  // Charts — interactive
+  const nLanes = lanes.length;
+  const zoom = state.xZoom;
+  const xMin = zoom ? zoom.min : 0;
+  const xMax = zoom ? zoom.max : totalLength;
+
+  // Defaults: speed starts at 3.5 m/s (low at bottom), cadence at 30 inverted (high at top)
+  const speedSpec   = {getY:tr=>tr.metrePerSecond, label:t("spec_speed"),   fmt:v=>v.toFixed(2)+" m/s", yMin:3.5, invertY:true, yDec:1};
+  const cadenceSpec = {getY:tr=>tr.strokeRate,     label:t("spec_cadence"), fmt:v=>v.toFixed(0)+" s/m", yMin:30,  invertY:true, yDec:0, dashed:true};
+  const rankSpec    = {getY:tr=>tr.currentPosition, label:t("spec_rank"),   fmt:v=>"P"+Math.round(v),  yMin:1, yMax:nLanes, yTicks:nLanes-1, yDec:0, yFmt:v=>Math.round(v)};
+  const gapSpec     = {getY:tr=>tr.distanceFromLeader, label:t("spec_gap"), fmt:v=>v.toFixed(0)+" m",  yMin:0, yDec:0};
+
+  html += `<div class="charts">
+    ${makeChart("speed",   t("chart_speed"),   lanes, [speedSpec],                {xMin, xMax, scaleEditable:true})}
+    ${makeChart("cadence", t("chart_cadence"), lanes, [cadenceSpec],              {xMin, xMax, scaleEditable:true})}
+    ${makeChart("rank",    t("chart_rank"),    lanes, [rankSpec],                 {xMin, xMax})}
+    ${makeChart("gap",     t("chart_gap"),     lanes, [gapSpec],                  {xMin, xMax, scaleEditable:true})}
+    ${makeChart("dual",    t("chart_dual"),    lanes, [speedSpec, cadenceSpec],   {xMin, xMax})}
+  </div>`;
+
+  return html;
+}
+
+// ── chart interactivity ────────────────────────────────────────────────
+function rerender(){ render(); }
+
+function nearestPoint(points, x){
+  if(!points.length) return null;
+  // binary search
+  let lo=0, hi=points.length-1;
+  while(lo<hi){
+    const mid=(lo+hi)>>1;
+    if(points[mid].x < x) lo=mid+1; else hi=mid;
+  }
+  // compare with neighbour
+  const a = points[lo], b = points[lo-1];
+  if(!b) return a;
+  return Math.abs(a.x-x) < Math.abs(b.x-x) ? a : b;
+}
+
+function attachChartHandlers(){
+  document.querySelectorAll(".chart").forEach(chartEl => {
+    const id = chartEl.dataset.chartId;
+    const c = chartCache[id]; if(!c) return;
+    const svg = chartEl.querySelector("svg");
+    const tooltip = chartEl.querySelector(".tooltip");
+    const cursor = chartEl.querySelector(".cursor");
+    const vline = chartEl.querySelector(".vline");
+    const dots = chartEl.querySelector(".dots");
+    const zoomRect = chartEl.querySelector(".zoom-rect");
+    const {W,H,PAD_L,PAD_R,PAD_T,PAD_B} = c.dim;
+
+    let dragStart = null;
+
+    function svgXFromEvent(ev){
+      const rect = svg.getBoundingClientRect();
+      const svgX = ((ev.clientX - rect.left) / rect.width) * W;
+      return Math.max(PAD_L, Math.min(W-PAD_R, svgX));
+    }
+    function dataXFromSvgX(svgX){
+      return c.xMin + ((svgX-PAD_L)/(W-PAD_L-PAD_R)) * (c.xMax-c.xMin);
+    }
+    function sxLocal(x){ return PAD_L + ((x-c.xMin)/(c.xMax-c.xMin))*(W-PAD_L-PAD_R); }
+    function syLocal(y, axisIdx){
+      const a = c.axes[axisIdx];
+      return PAD_T + ((y-a.yMin)/(a.yMax-a.yMin))*(H-PAD_T-PAD_B);
+    }
+
+    svg.addEventListener("mousemove", (ev) => {
+      const svgX = svgXFromEvent(ev);
+      const dataX = dataXFromSvgX(svgX);
+
+      // drag-to-zoom selection
+      if(dragStart !== null){
+        const x0 = Math.min(dragStart, svgX);
+        const x1 = Math.max(dragStart, svgX);
+        zoomRect.setAttribute("x", x0);
+        zoomRect.setAttribute("width", x1-x0);
+        zoomRect.style.display = "";
+        return;
+      }
+
+      // hover cursor
+      cursor.style.display = "";
+      vline.setAttribute("x1", svgX);
+      vline.setAttribute("x2", svgX);
+
+      // gather nearest point per visible lane (one per spec)
+      const rows = [];
+      let dotsHtml = "";
+      const seenLane = new Set();
+      for(const s of c.series){
+        const np = nearestPoint(s.points, dataX);
+        if(!np) continue;
+        const px = sxLocal(np.x);
+        const py = syLocal(np.y, s.specIdx);
+        dotsHtml += `<circle class="dot" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" stroke="${s.color}"/>`;
+        const key = s.lane.id + "_" + s.specIdx;
+        rows.push({laneId:s.lane.id, name:s.lane.DisplayName, color:s.color, specIdx:s.specIdx, y:np.y, x:np.x});
+      }
+      dots.innerHTML = dotsHtml;
+
+      // build tooltip — group by lane, listing all specs
+      const byLane = {};
+      let refX = dataX;
+      for(const r of rows){
+        if(!byLane[r.laneId]) byLane[r.laneId] = {name:r.name, color:r.color, vals:[]};
+        byLane[r.laneId].vals.push({specIdx:r.specIdx, y:r.y});
+        refX = r.x;
+      }
+      // sort by primary spec value (first axis) for the ranking display
+      const sorted = Object.values(byLane).sort((a,b)=>{
+        const av = a.vals.find(v=>v.specIdx===0)?.y ?? Infinity;
+        const bv = b.vals.find(v=>v.specIdx===0)?.y ?? Infinity;
+        // For rank chart (lower=better) and gap chart (lower=better) → ascending OK
+        // For speed chart (higher=better) → descending. We just sort ascending for simplicity.
+        return av - bv;
+      });
+      let html = `<div class="x-lbl">${Math.round(refX)} m</div>`;
+      for(const ln of sorted){
+        const vals = ln.vals.map(v => c.specs[v.specIdx].fmt(v.y)).join(" · ");
+        html += `<div class="row"><i style="background:${ln.color}"></i><span>${ln.name}</span><span style="margin-left:auto">${vals}</span></div>`;
+      }
+      tooltip.innerHTML = html;
+      tooltip.style.display = "";
+      // position tooltip
+      const tw = tooltip.offsetWidth;
+      const th = tooltip.offsetHeight;
+      const bodyRect = chartEl.querySelector(".chart-body").getBoundingClientRect();
+      const svgRect = svg.getBoundingClientRect();
+      const mouseClientX = ev.clientX;
+      let left = mouseClientX - bodyRect.left + 12;
+      if(left + tw > bodyRect.width - 4) left = mouseClientX - bodyRect.left - tw - 12;
+      let top = ev.clientY - bodyRect.top + 12;
+      if(top + th > bodyRect.height) top = bodyRect.height - th - 4;
+      if(top < 0) top = 0;
+      tooltip.style.left = left+"px";
+      tooltip.style.top  = top+"px";
+    });
+
+    svg.addEventListener("mouseleave", () => {
+      cursor.style.display = "none";
+      tooltip.style.display = "none";
+      zoomRect.style.display = "none";
+      dragStart = null;
+    });
+
+    svg.addEventListener("mousedown", (ev) => {
+      if(ev.button !== 0) return;
+      dragStart = svgXFromEvent(ev);
+      tooltip.style.display = "none";
+      cursor.style.display = "none";
+    });
+
+    window.addEventListener("mouseup", (ev) => {
+      if(dragStart === null) return;
+      const svgX = svgXFromEvent(ev);
+      const x0 = Math.min(dragStart, svgX);
+      const x1 = Math.max(dragStart, svgX);
+      dragStart = null;
+      zoomRect.style.display = "none";
+      // require at least 10px drag
+      if(Math.abs(x1-x0) < 8) return;
+      const dMin = Math.round(dataXFromSvgX(x0));
+      const dMax = Math.round(dataXFromSvgX(x1));
+      state.xZoom = {min: Math.max(0, dMin), max: dMax};
+      rerender();
+    }, {once:true});
+
+    svg.addEventListener("dblclick", () => {
+      state.xZoom = null;
+      rerender();
+    });
+
+    // legend toggle
+    chartEl.querySelectorAll(".legend span[data-lane-id]").forEach(sp => {
+      sp.addEventListener("click", () => {
+        const lid = sp.dataset.laneId;
+        if(state.hiddenLanes.has(lid)) state.hiddenLanes.delete(lid);
+        else state.hiddenLanes.add(lid);
+        rerender();
+      });
+    });
+
+    // expand button
+    chartEl.querySelectorAll("[data-action='expand']").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.expandedChart = (state.expandedChart === id) ? null : id;
+        rerender();
+      });
+    });
+
+    // reset-zoom button
+    chartEl.querySelectorAll("[data-action='reset-zoom']").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.xZoom = null;
+        rerender();
+      });
+    });
+
+    // Y-scale edit (single-axis charts)
+    function applyScaleChange(action, val){
+      const cur = state.yScales[id] || {};
+      const newScale = {...cur};
+      if(action === "set-ymin") newScale.yMin = isNaN(val)?null:val;
+      else if(action === "set-ymax") newScale.yMax = isNaN(val)?null:val;
+      // store in DATA orientation; makeChart will invert for inverted axes
+      state.yScales[id] = newScale;
+      rerender();
+    }
+    chartEl.querySelectorAll(".scale-edit input").forEach(inp => {
+      inp.addEventListener("change", () => applyScaleChange(inp.dataset.action, parseFloat(inp.value)));
+      // prevent crosshair / drag-zoom when interacting with input
+      ["mousedown","click","dblclick"].forEach(ev => inp.addEventListener(ev, e=>e.stopPropagation()));
+    });
+    chartEl.querySelectorAll("[data-action='reset-scale']").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        delete state.yScales[id];
+        rerender();
+      });
+    });
+  });
+}
+
+// ── live status indicator (header refresh-status repurposed) ─────────
+function updateLiveStatus() {
+  const dot = $("refresh-dot");
+  const lbl = $("refresh-label");
+  if (!dot || !lbl) return;
+  if (!state.selectedRace) {
+    dot.className = "refresh-dot";
+    lbl.textContent = t("status_ready");
+    return;
+  }
+  if (state.lastError) {
+    dot.className = "refresh-dot";
+    lbl.textContent = t("status_error");
+    return;
+  }
+  const isLive = state.currentTrackerType === "Live";
+  dot.className = "refresh-dot on" + (isLive ? "" : " replay");
+  const time = state.lastUpdate
+    ? new Date(state.lastUpdate).toLocaleTimeString(getLocale())
+    : "—";
+  lbl.textContent = (isLive ? t("status_live") : t("status_replay")) + " · " + time;
+}
+
+// ── polling loop ────────────────────────────────────────────────────────
+async function tick(){
+  if(!state.selectedRace) return;
+  try {
+    const data = await fetchTracker(state.selectedRace.id, state.currentTrackerType);
+    state.lastData = data;
+    // re-evaluate trackerType: if race finished, switch to replay endpoint
+    const st = data.config?.race?.raceStatus?.DisplayName || "";
+    const isLive = /live/i.test(st);
+    state.currentTrackerType = isLive ? "Live" : "Replay";
+    state.lastUpdate = Date.now();
+    state.lastError = null;
+    render();
+    updateLiveStatus();
+    if ($("more-menu")?.classList.contains("open")) renderMoreMenu();
+  } catch(e){
+    state.lastError = e.message;
+    updateLiveStatus();
+  }
+}
+
+function startPolling(){
+  stopPolling();
+  tick();
+  state.pollTimer = setInterval(tick, POLL_MS);
+}
+function stopPolling(){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+}
+
+// ── Persistence : compétition sélectionnée (partagée index ↔ schedule ↔ live) ──
+function saveSelectedComp(comp, year, category) {
+  if (!comp) { localStorage.removeItem("wr-selected-comp"); return; }
+  try {
+    localStorage.setItem("wr-selected-comp", JSON.stringify({
+      id: comp.id, year: String(year), category: String(category),
+    }));
+  } catch {}
+}
+function loadSelectedComp() {
+  try {
+    const raw = localStorage.getItem("wr-selected-comp");
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function isOngoingComp(c) {
+  const today = new Date().toISOString().slice(0,10);
+  const start = String(c.StartDate || "").slice(0,10);
+  const end   = String(c.EndDate   || "").slice(0,10);
+  return start && end && start <= today && today <= end;
+}
+
+// ── actions (called from inline onclick) ──────────────────────────────
+async function search(){
+  state.year = $("sel-year").value;
+  state.category = $("sel-category").value;
+  state.searched = true; state.loadingComps = true; state.error = null;
+  state.competitions = []; state.selectedComp = null; state.selectedRace = null;
+  stopPolling();
+  updateLiveStatus();
+  $("btn-search").disabled = true;
+  render();
+  try { state.competitions = await apiCompetitions(state.year, state.category); }
+  catch(e){ state.error = e.message; }
+  finally { state.loadingComps = false; $("btn-search").disabled = false; render(); }
+
+  if (!state.error && state.competitions.length) {
+    const saved = loadSelectedComp();
+    let target = null;
+    if (saved && saved.year === String(state.year) && saved.category === state.category) {
+      target = state.competitions.find(c => c.id === saved.id) || null;
+    }
+    if (!target) target = state.competitions.find(isOngoingComp) || state.competitions[0];
+    if (target) selectComp(target.id);
+  }
+}
+
+async function selectComp(id){
+  const c = state.competitions.find(x => x.id===id); if(!c) return;
+  state.selectedComp = c; state.selectedRace = null;
+  state.races = []; state.loadingRaces = true; state.classFilter = null;
+  stopPolling();
+  updateLiveStatus();
+  saveSelectedComp(state.selectedComp, $("sel-year").value, $("sel-category").value);
+  render();
+  try { state.races = await apiRaces(id); }
+  catch(e){ state.error = e.message; }
+  finally { state.loadingRaces = false; render(); }
+}
+
+function setClassFilter(c){ state.classFilter = c; render(); }
+
+function selectRace(id){
+  const r = state.races.find(x => x.id===id); if(!r) return;
+  state.selectedRace = r;
+  state.hiddenLanes.clear(); state.expandedChart = null; state.xZoom = null; state.yScales = {};
+  state.lastData = null; state.lastUpdate = null; state.lastError = null;
+  state.currentTrackerType = /live/i.test(r.raceStatus?.DisplayName||"") ? "Live" : "Replay";
+  render();
+  updateLiveStatus();
+  startPolling();
+}
+
+function backToComps(){
+  stopPolling();
+  state.selectedComp = null; state.selectedRace = null;
+  state.lastData = null; state.lastUpdate = null; state.lastError = null;
+  saveSelectedComp(null);
+  render();
+  updateLiveStatus();
+}
+function backToRaces(){
+  stopPolling();
+  state.selectedRace = null;
+  state.lastData = null; state.lastUpdate = null; state.lastError = null;
+  render();
+  updateLiveStatus();
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────
+function initTheme() {
+  const isLight = localStorage.getItem("wr-theme") === "light";
+  if (isLight) document.body.classList.add("light");
+  $("theme-icon").textContent = isLight ? "☀️" : "🌙";
+}
+function toggleTheme() {
+  const isLight = document.body.classList.toggle("light");
+  localStorage.setItem("wr-theme", isLight ? "light" : "dark");
+  $("theme-icon").textContent = isLight ? "☀️" : "🌙";
+}
+
+// ── More menu ─────────────────────────────────────────────────────────
+function toggleMoreMenu(e) {
+  if (e) e.stopPropagation();
+  const m = $("more-menu");
+  const willOpen = !m.classList.contains("open");
+  m.classList.toggle("open", willOpen);
+  if (willOpen) renderMoreMenu();
+}
+function closeMoreMenu() {
+  $("more-menu").classList.remove("open");
+}
+function renderMoreMenu() {
+  const notifOn = localStorage.getItem("wr-notif-enabled") === "on";
+  const fav     = localStorage.getItem("wr-fav-nation");
+
+  const elN = $("menu-btn-notif");
+  if (elN) elN.classList.toggle("on", notifOn);
+  const stEl = $("menu-notif-state");
+  if (stEl) stEl.textContent = notifOn ? "ON" : "OFF";
+
+  $("menu-fav-info").textContent = fav
+    ? t("menu_fav", { nation: fav })
+    : t("menu_no_fav");
+
+  const info = $("menu-refresh-info");
+  if (!state.selectedRace) {
+    info.textContent = t("menu_status_idle");
+  } else if (state.lastError) {
+    info.textContent = t("menu_status_error", { msg: state.lastError });
+  } else {
+    const time = state.lastUpdate
+      ? new Date(state.lastUpdate).toLocaleTimeString(getLocale())
+      : "—";
+    const isLive = state.currentTrackerType === "Live";
+    info.textContent = isLive
+      ? t("menu_status_live",   { when: time })
+      : t("menu_status_replay", { when: time });
+  }
+}
+
+document.addEventListener("click", e => {
+  const m = $("more-menu");
+  if (!m || !m.classList.contains("open")) return;
+  if (e.target.closest("#more-menu") || e.target.closest("#btn-more")) return;
+  m.classList.remove("open");
+});
+
+// ── Notifications ─────────────────────────────────────────────────────
+function toggleNotifications() {
+  if (!N.on) {
+    if (!("Notification" in window)) { alert(t("notif_no_browser")); return; }
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(p => {
+        if (p === "granted" || p === "denied") {
+          N.on = true;
+          localStorage.setItem("wr-notif-enabled", "on");
+          $("btn-notif").classList.toggle("on", true);
+          startNotificationLoop();
+          if ($("more-menu").classList.contains("open")) renderMoreMenu();
+        }
+      });
+      return;
+    }
+    N.on = true;
+    localStorage.setItem("wr-notif-enabled", "on");
+    $("btn-notif").classList.toggle("on", true);
+    startNotificationLoop();
+  } else {
+    N.on = false;
+    localStorage.setItem("wr-notif-enabled", "off");
+    $("btn-notif").classList.toggle("on", false);
+    stopNotificationLoop();
+  }
+  if ($("more-menu").classList.contains("open")) renderMoreMenu();
+}
+
+function getNotifShownKey() {
+  return `wr-notif-shown-${new Date().toISOString().slice(0,10)}`;
+}
+function loadShownToday() {
+  try { return new Set(JSON.parse(localStorage.getItem(getNotifShownKey()) || "[]")); }
+  catch { return new Set(); }
+}
+function saveShownToday(set) {
+  localStorage.setItem(getNotifShownKey(), JSON.stringify([...set]));
+}
+function showToast(title, text) {
+  const container = $("toast-container");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = `
+    <span class="toast-icon">🔔</span>
+    <div class="toast-body">
+      <div class="toast-title"></div>
+      <div class="toast-text"></div>
+    </div>
+    <button class="toast-close" aria-label="Close">✕</button>`;
+  el.querySelector(".toast-title").textContent = title;
+  el.querySelector(".toast-text").textContent  = text;
+  el.querySelector(".toast-close").addEventListener("click", () => removeToast(el));
+  container.appendChild(el);
+  setTimeout(() => removeToast(el), 8000);
+}
+function removeToast(el) {
+  if (!el || !el.isConnected) return;
+  el.classList.add("fade-out");
+  setTimeout(() => el.remove(), 300);
+}
+function sendBrowserNotif(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  try { new Notification(title, { body, tag: title.slice(0,20) }); }
+  catch(e) { /* ignore */ }
+}
+
+async function fetchRacesForNotifs() {
+  // Use loaded races if available; else use saved comp
+  if (state.races && state.races.length) return state.races;
+  const saved = loadSelectedComp();
+  if (!saved || !saved.id) return [];
+  try { return await apiRaces(saved.id); }
+  catch { return []; }
+}
+
+async function checkUpcomingRaces() {
+  if (!N.on) return;
+  const fav = getFavNation();
+  if (!fav) return;
+  const races = await fetchRacesForNotifs();
+  if (!races.length) return;
+
+  N.shownToday = loadShownToday();
+  const now = Date.now();
+  for (const race of races) {
+    const rid = String(race.id);
+    if (N.shownToday.has(rid)) continue;
+    if (!race.DateString) continue;
+    const ts = new Date(race.DateString).getTime();
+    if (isNaN(ts)) continue;
+    const sec = (ts - now) / 1000;
+    if (sec <= 0 || sec > 300) continue;
+
+    // Match nation by code (raceBoats) — fav may be a code or full name
+    const codes = (race.raceBoats || []).map(b => b.DisplayName);
+    const inRace = codes.includes(fav) || codes.some(c => c && fav.toUpperCase().startsWith(c));
+    if (!inRace) continue;
+
+    notifyRace(race, fav);
+    N.shownToday.add(rid);
+  }
+  saveShownToday(N.shownToday);
+}
+
+function notifyRace(race, nation) {
+  const className = race.event?.boatClass?.DisplayName || "";
+  const phase     = race.racePhase?.DisplayName || "";
+  const time      = fmtClockTime(race.DateString);
+  const title = t("notif_title", { nation });
+  const body  = [race.DisplayName, className, phase, time].filter(Boolean).join(" · ");
+  showToast(title, body);
+  sendBrowserNotif(title, body);
+}
+
+function startNotificationLoop() {
+  if (N.intervalId) clearInterval(N.intervalId);
+  N.shownToday = loadShownToday();
+  setTimeout(checkUpcomingRaces, 1500);
+  N.intervalId = setInterval(checkUpcomingRaces, 30000);
+}
+function stopNotificationLoop() {
+  if (N.intervalId) { clearInterval(N.intervalId); N.intervalId = null; }
+}
+
+function initHeaderState() {
+  if (localStorage.getItem("wr-notif-enabled") === "on"
+      && "Notification" in window
+      && Notification.permission === "granted") {
+    N.on = true;
+    $("btn-notif").classList.add("on");
+    startNotificationLoop();
+  }
+}
+
+function autoSearchOnLoad() {
+  const saved = loadSelectedComp();
+  if (saved && saved.year && saved.category) {
+    const yearSel = $("sel-year");
+    const catSel  = $("sel-category");
+    if ([...yearSel.options].some(o => o.value === saved.year)) yearSel.value = saved.year;
+    if ([...catSel.options].some(o => o.value === saved.category)) catSel.value = saved.category;
+  }
+  search();
+}
+
+// ── wiring ────────────────────────────────────────────────────────────
+(function(){
+  const sel = $("sel-year");
+  const cur = new Date().getFullYear();
+  for(let y=cur; y>=1990; y--){
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
+
+$("btn-search").addEventListener("click", search);
+
+initTheme();
+applyStaticI18n();
+$("lang-icon").textContent = getLang().toUpperCase();
+initHeaderState();
+updateLiveStatus();
+render();
+autoSearchOnLoad();
+</script>
+</body>
+</html>
