@@ -157,6 +157,23 @@
     .hdr-more { display: inline-flex; align-items: center; justify-content: center; }
   }
 
+  @media (max-width: 720px) {
+    .layout { flex-direction: column; }
+    aside {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .cards-grid { grid-template-columns: 1fr; }
+    main { padding: 14px; }
+    .race-head h2 { font-size: 0.95rem; }
+    .progress { min-width: 80px; }
+    table.lanes .col-split,
+    table.lanes .col-final,
+    table.lanes .col-crew { display: none; }
+    .tracker-actions { flex-wrap: wrap; gap: 6px; }
+  }
+
   /* ── Toast notifications ── */
   .toast-container {
     position: fixed; bottom: 16px; right: 16px; z-index: 300;
@@ -192,7 +209,7 @@
   .toast-close:hover { color: var(--text); }
 
   /* ── Layout ─────────────────────────────────────────────────────────── */
-  .layout{display:flex;flex:1;min-height:0}
+  .layout{display:flex;flex:1;min-height:0;overflow:hidden}
   aside{
     width:270px;flex-shrink:0;background:var(--surface);
     border-right:1px solid var(--border);padding:20px;
@@ -293,6 +310,14 @@
   }
 
   #tracker{display:flex;flex-direction:column;gap:14px}
+  .tracker-actions{
+    display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;
+  }
+  .table-wrap{
+    overflow-x:auto;border-radius:var(--radius);
+    border:1px solid var(--border);
+    -webkit-overflow-scrolling:touch;
+  }
   .race-head{display:flex;gap:12px;align-items:baseline;margin-bottom:10px;flex-wrap:wrap}
   .race-head h2{margin:0;font-size:16px}
   .race-head .meta{color:var(--text-muted);font-size:12px}
@@ -496,6 +521,22 @@ const I18N = {
     ago_sec: "{n}s ago", ago_min: "{n}m ago", ago_hour: "{n}h ago",
     notif_title: "🚣 {nation} — race in 5 min",
     notif_no_browser: "Your browser does not support notifications.",
+    btn_export_csv: "Export CSV",
+    btn_export_pdf: "Export charts PDF",
+    export_no_data: "No live data to export. Open a race with tracker data first.",
+    export_csv_busy: "Exporting…",
+    export_pdf_busy: "Generating PDF…",
+    csv_nation: "nation",
+    csv_distance_m: "distance_m",
+    csv_speed_ms: "speed_m_s",
+    csv_cadence: "cadence",
+    csv_gap_leader_m: "gap_to_leader_m",
+    csv_meta_race: "race",
+    csv_meta_class: "class",
+    csv_meta_exported: "exported",
+    pdf_title: "World Rowing — Live charts",
+    tt_export_csv: "Download raw live series (CSV)",
+    tt_export_pdf: "Download charts as PDF",
   },
   fr: {
     title_live: "World Rowing — Live",
@@ -548,6 +589,22 @@ const I18N = {
     ago_sec: "il y a {n} s", ago_min: "il y a {n} min", ago_hour: "il y a {n} h",
     notif_title: "🚣 {nation} — course dans 5 min",
     notif_no_browser: "Votre navigateur ne supporte pas les notifications.",
+    btn_export_csv: "Exporter CSV",
+    btn_export_pdf: "Exporter graphiques PDF",
+    export_no_data: "Aucune donnée live à exporter. Ouvrez d'abord une course avec tracker.",
+    export_csv_busy: "Export…",
+    export_pdf_busy: "Génération PDF…",
+    csv_nation: "nation",
+    csv_distance_m: "distance_m",
+    csv_speed_ms: "vitesse_m_s",
+    csv_cadence: "cadence",
+    csv_gap_leader_m: "ecart_leader_m",
+    csv_meta_race: "course",
+    csv_meta_class: "classe",
+    csv_meta_exported: "exporte",
+    pdf_title: "World Rowing — Graphiques live",
+    tt_export_csv: "Télécharger les séries live brutes (CSV)",
+    tt_export_pdf: "Télécharger les graphiques en PDF",
   },
 };
 const getLang = () => localStorage.getItem("wr-lang") || "en";
@@ -1032,18 +1089,22 @@ function renderTrackerHTML(data){
       <span class="badge ${statusClass}">${statusName}</span>
       <span class="meta">${(race.DateString||"").slice(0,16).replace("T"," ")}</span>
     </div>
-    <table class="lanes">
+    <div class="tracker-actions">
+      <button type="button" class="hdr-btn" onclick="exportLiveCsv()" title="${esc(t("tt_export_csv"))}">${t("btn_export_csv")}</button>
+      <button type="button" class="hdr-btn" id="btn-export-pdf" onclick="exportChartsPdf()" title="${esc(t("tt_export_pdf"))}">${t("btn_export_pdf")}</button>
+    </div>
+    <div class="table-wrap"><table class="lanes">
       <thead>
         <tr>
           <th>${t("hdr_pos")}</th><th>${t("hdr_lane")}</th><th>${t("hdr_country")}</th>
           <th>${t("hdr_progress")}</th>
           <th class="num">${t("hdr_distance")}</th>
           <th class="num">${t("hdr_speed")}</th>
-          <th class="num">${t("hdr_split")}</th>
+          <th class="num col-split">${t("hdr_split")}</th>
           <th class="num">${t("hdr_cadence")}</th>
           <th class="num">${t("hdr_gap_leader")}</th>
-          <th class="num">${t("hdr_final_time")}</th>
-          <th>${t("hdr_crew")}</th>
+          <th class="num col-final">${t("hdr_final_time")}</th>
+          <th class="col-crew">${t("hdr_crew")}</th>
         </tr>
       </thead>
       <tbody>`;
@@ -1069,14 +1130,14 @@ function renderTrackerHTML(data){
         <td><div class="progress" title="${dist}m / ${totalLength}m"><div style="width:${pct}%"></div></div><div class="small">${Math.round(pct)}%</div></td>
         <td class="num">${dist} m</td>
         <td class="num">${fmtMS(ms)}</td>
-        <td class="num">${fmtSplit(ms)}</td>
+        <td class="num col-split">${fmtSplit(ms)}</td>
         <td class="num">${stroke ? stroke+" s/m" : "—"}</td>
         <td class="num ${gap===0?"gap lead":"gap"}">${gap==null?"—":(gap===0?t("leader_label"):"-"+gap+"m")}</td>
-        <td class="num">${fmtResultTime(lane.ResultTime)}</td>
-        <td class="athletes">${athletes}</td>
+        <td class="num col-final">${fmtResultTime(lane.ResultTime)}</td>
+        <td class="athletes col-crew">${athletes}</td>
       </tr>`;
   }
-  html += `</tbody></table>`;
+  html += `</tbody></table></div>`;
 
   // Intermediates table
   const interDistances = new Set();
@@ -1377,6 +1438,239 @@ function startPolling(){
 }
 function stopPolling(){
   if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+}
+
+// ── Export CSV / PDF ──────────────────────────────────────────────────
+function csvEscape(v) {
+  const s = v == null ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function exportBaseFilename() {
+  const comp = state.selectedComp?.CompetitionCode || state.selectedComp?.id || "comp";
+  const raceId = state.selectedRace?.id || "race";
+  const d = new Date();
+  const stamp = d.getFullYear()
+    + String(d.getMonth() + 1).padStart(2, "0")
+    + String(d.getDate()).padStart(2, "0")
+    + "-" + String(d.getHours()).padStart(2, "0")
+    + String(d.getMinutes()).padStart(2, "0");
+  return `WR_live_${comp}_${raceId}_${stamp}`;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function collectLiveCsvRows(lanes) {
+  const rows = [];
+  for (const lane of lanes) {
+    const nation = lane.DisplayName || "?";
+    const points = (lane.live && lane.live.length)
+      ? lane.live
+      : (lane.currentPoint ? [lane.currentPoint] : []);
+    for (const p of points) {
+      const tr = p.raceBoatTracker || {};
+      const dist = tr.distanceTravelled;
+      if (dist == null || !isFinite(dist)) continue;
+      rows.push({
+        nation,
+        distance_m: dist,
+        speed_m_s: tr.metrePerSecond ?? "",
+        cadence: tr.strokeRate ?? "",
+        gap_to_leader_m: tr.distanceFromLeader ?? "",
+      });
+    }
+  }
+  rows.sort((a, b) => {
+    const nc = a.nation.localeCompare(b.nation);
+    if (nc !== 0) return nc;
+    return a.distance_m - b.distance_m;
+  });
+  return rows;
+}
+
+function exportLiveCsv() {
+  const cfg = state.lastData?.config;
+  if (!cfg?.lanes?.length) {
+    alert(t("export_no_data"));
+    return;
+  }
+  const race = cfg.race || {};
+  const cls = race.event?.boatClass?.DisplayName || "";
+  const exported = new Date().toISOString();
+  const rows = collectLiveCsvRows(cfg.lanes);
+  if (!rows.length) {
+    alert(t("export_no_data"));
+    return;
+  }
+
+  const lines = [
+    `# ${t("csv_meta_race")},${csvEscape(race.DisplayName || "")}`,
+    `# ${t("csv_meta_class")},${csvEscape(cls)}`,
+    `# ${t("csv_meta_exported")},${csvEscape(exported)}`,
+    [
+      t("csv_nation"),
+      t("csv_distance_m"),
+      t("csv_speed_ms"),
+      t("csv_cadence"),
+      t("csv_gap_leader_m"),
+    ].join(","),
+  ];
+  for (const r of rows) {
+    lines.push([
+      csvEscape(r.nation),
+      r.distance_m,
+      r.speed_m_s,
+      r.cadence,
+      r.gap_to_leader_m,
+    ].join(","));
+  }
+
+  const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
+  downloadBlob(blob, exportBaseFilename() + ".csv");
+}
+
+function getExportSurfaceColor() {
+  return document.body.classList.contains("light") ? "#ffffff" : "#1a1d27";
+}
+
+function svgToPngDataUrl(svgEl) {
+  return new Promise((resolve, reject) => {
+    const box = svgEl.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(box.width * dpr));
+    const h = Math.max(1, Math.round(box.height * dpr));
+    const bg = getExportSurfaceColor();
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", String(w));
+    clone.setAttribute("height", String(h));
+    if (!clone.getAttribute("viewBox")) {
+      const vb = svgEl.viewBox?.baseVal;
+      if (vb && vb.width) {
+        clone.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.width} ${vb.height}`);
+      }
+    }
+    const rectBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rectBg.setAttribute("width", "100%");
+    rectBg.setAttribute("height", "100%");
+    rectBg.setAttribute("fill", bg);
+    clone.insertBefore(rectBg, clone.firstChild);
+
+    const svgData = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("SVG render failed"));
+    };
+    img.src = url;
+  });
+}
+
+async function exportChartsPdf() {
+  if (!state.lastData?.config) {
+    alert(t("export_no_data"));
+    return;
+  }
+  if (typeof window.jspdf === "undefined" || !window.jspdf.jsPDF) {
+    alert(t("export_no_data"));
+    console.error("jsPDF not loaded");
+    return;
+  }
+  const charts = document.querySelectorAll("#main-area .charts .chart");
+  if (!charts.length) {
+    alert(t("export_no_data"));
+    return;
+  }
+
+  const btn = $("btn-export-pdf");
+  const prevLabel = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("export_pdf_busy");
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const contentW = pageW - margin * 2;
+
+    const race = state.lastData.config.race || {};
+    const cls = race.event?.boatClass?.DisplayName || "";
+    const status = race.raceStatus?.DisplayName || "";
+    doc.setFontSize(14);
+    doc.text(t("pdf_title"), margin, margin + 4);
+    doc.setFontSize(10);
+    let y = margin + 12;
+    const meta = [
+      race.DisplayName || "",
+      cls,
+      status,
+      new Date().toLocaleString(getLocale()),
+    ].filter(Boolean);
+    for (const line of meta) {
+      doc.text(line, margin, y);
+      y += 5;
+    }
+
+    for (let i = 0; i < charts.length; i++) {
+      const chartEl = charts[i];
+      const svg = chartEl.querySelector("svg");
+      if (!svg) continue;
+      const titleEl = chartEl.querySelector(".chart-head h3");
+      const title = titleEl ? titleEl.textContent.replace(/\s*\[[^\]]*\]\s*/g, "").trim() : `Chart ${i + 1}`;
+      const dataUrl = await svgToPngDataUrl(svg);
+
+      doc.addPage();
+      doc.setFontSize(11);
+      doc.text(title, margin, margin + 4);
+      const imgY = margin + 10;
+      const props = doc.getImageProperties(dataUrl);
+      const ratio = props.height / props.width;
+      let imgW = contentW;
+      let imgH = imgW * ratio;
+      const maxH = pageH - imgY - margin;
+      if (imgH > maxH) {
+        imgH = maxH;
+        imgW = imgH / ratio;
+      }
+      const imgX = margin + (contentW - imgW) / 2;
+      doc.addImage(dataUrl, "PNG", imgX, imgY, imgW, imgH);
+    }
+
+    doc.save(exportBaseFilename() + ".pdf");
+  } catch (e) {
+    console.error(e);
+    alert(t("export_no_data"));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prevLabel || t("btn_export_pdf");
+    }
+  }
 }
 
 // ── Persistence : compétition sélectionnée (partagée index ↔ schedule ↔ live) ──
@@ -1696,5 +1990,6 @@ updateLiveStatus();
 render();
 autoSearchOnLoad();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 </body>
 </html>

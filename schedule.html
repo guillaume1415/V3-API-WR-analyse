@@ -886,14 +886,27 @@ async function apiStartList(raceId) {
   return apiFetch(url);
 }
 
-// Résout nom complet → code pays à partir des engagés (ex. "Netherlands" → "NED")
-function nationCodeFromEntries(fullName) {
+// Tous les codes pays (NED, NED2, …) pour un libellé engagés (nom complet ou code).
+function nationCodesFromEntries(fullName) {
+  const codes = new Set();
+  if (!fullName) return [];
   for (const evt of S.entries) {
     for (const boat of (evt.boats || [])) {
-      if (boat.country?.DisplayName === fullName) return boat.DisplayName;
+      const code = boat.DisplayName;
+      if (!code) continue;
+      const label = boat.country?.DisplayName || code;
+      if (label === fullName || boat.country?.DisplayName === fullName || code === fullName) {
+        codes.add(code);
+      }
     }
   }
-  return fullName;
+  if (!codes.size) codes.add(fullName);
+  return [...codes];
+}
+
+function raceMatchesNationCodes(race, codes) {
+  const set = new Set(codes);
+  return (race.raceBoats || []).some(b => b.DisplayName && set.has(b.DisplayName));
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
@@ -948,12 +961,14 @@ function render() {
   if (S.phaseFilter) races = races.filter(r => (r.racePhase?.DisplayName || "") === S.phaseFilter);
   if (S.classFilter) races = races.filter(r => (r.event?.boatClass?.DisplayName || "") === S.classFilter);
   if (S.nationFilter) {
-    // raceBoat.DisplayName = code pays (ex. "NED")
-    // Si les engagés sont chargés, on résout le nom complet → code
-    const code = S.entriesLoaded
-      ? nationCodeFromEntries(S.nationFilter)
-      : S.nationFilter;
-    races = races.filter(r => (r.raceBoats || []).some(b => b.DisplayName === code));
+    const codes = S.entriesLoaded
+      ? nationCodesFromEntries(S.nationFilter)
+      : [S.nationFilter];
+    const beforeCount = S.races.length;
+    races = races.filter(r => raceMatchesNationCodes(r, codes));
+    // #region agent log
+    fetch('http://127.0.0.1:7875/ingest/de178605-a63a-44cd-9c05-56fda985f837',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'36811a'},body:JSON.stringify({sessionId:'36811a',hypothesisId:'H1-multi-code',location:'schedule.html:render',message:'nation filter',data:{page:'schedule',filter:S.nationFilter,codes,beforeCount,afterCount:races.length,entriesLoaded:S.entriesLoaded},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
   }
 
   // ── Counts per status ──
@@ -1402,8 +1417,8 @@ function tryRestoreNation() {
   if (!S.entriesLoaded) return;
   const saved = localStorage.getItem("wr-nation-schedule") || getFavNation();
   if (!saved) return;
-  const code   = nationCodeFromEntries(saved);
-  const exists = S.races.some(r => (r.raceBoats || []).some(b => b.DisplayName === code));
+  const codes  = nationCodesFromEntries(saved);
+  const exists = S.races.some(r => raceMatchesNationCodes(r, codes));
   if (exists) {
     S.nationFilter    = saved;
     S.nationPanelOpen = true;
@@ -1600,11 +1615,9 @@ async function checkUpcomingRaces() {
   if (!fav) return;
   if (!S.races || !S.races.length) return;
 
-  let code = fav;
-  if (S.entriesLoaded && S.entries.length) {
-    const resolved = nationCodeFromEntries(fav);
-    if (resolved) code = resolved;
-  }
+  const codes = (S.entriesLoaded && S.entries.length)
+    ? nationCodesFromEntries(fav)
+    : [fav];
 
   N.shownToday = loadShownToday();
   const now = Date.now();
@@ -1617,7 +1630,7 @@ async function checkUpcomingRaces() {
     const sec = (t - now) / 1000;
     if (sec <= 0 || sec > 300) continue;
 
-    const inRace = (race.raceBoats || []).some(b => b.DisplayName === code);
+    const inRace = raceMatchesNationCodes(race, codes);
     if (!inRace) continue;
 
     notifyRace(race, fav);
