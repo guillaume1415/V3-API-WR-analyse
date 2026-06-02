@@ -409,6 +409,9 @@
     <a class="nav-link active" id="nav-live-link" href="live.html" title="Live">
       <span class="nav-icon">📡</span><span class="nav-label" id="nav-live-label">Live</span>
     </a>
+    <a class="nav-link" id="nav-analyse-link" href="analyse.html" title="Analyse">
+      <span class="nav-icon">📊</span><span class="nav-label" id="nav-analyse-label">Analyse</span>
+    </a>
   </nav>
   <div class="header-tools">
     <span class="refresh-status" id="refresh-status" title="Live status">
@@ -476,7 +479,7 @@ const I18N = {
   en: {
     title_live: "World Rowing — Live",
     subtitle: "Local interface · Official World Rowing API",
-    nav_results: "Results", nav_schedule: "Schedule", nav_live: "Live",
+    nav_results: "Results", nav_schedule: "Schedule", nav_live: "Live", nav_analyse: "Analyse",
     hdr_notifs: "Notifs",
     tt_home: "Home", tt_notifs: "Notifications", tt_theme: "Toggle theme",
     tt_more: "More", tt_lang: "Language", tt_refresh: "Live status",
@@ -509,6 +512,7 @@ const I18N = {
     hdr_final_time: "Final time",
     lanes_table_title: "Live standings",
     chart_speed: "Speed (m/s)",
+    chart_speed_hint: "Δd/Δt ±{w} s",
     chart_cadence: "Cadence (strokes/min)",
     chart_rank: "Rank",
     chart_gap: "Gap to leader (m)",
@@ -545,7 +549,7 @@ const I18N = {
   fr: {
     title_live: "World Rowing — Live",
     subtitle: "Interface locale · API officielle World Rowing",
-    nav_results: "Résultats", nav_schedule: "Programme", nav_live: "Live",
+    nav_results: "Résultats", nav_schedule: "Programme", nav_live: "Live", nav_analyse: "Analyse",
     hdr_notifs: "Notifs",
     tt_home: "Accueil", tt_notifs: "Notifications", tt_theme: "Changer le thème",
     tt_more: "Plus", tt_lang: "Langue", tt_refresh: "Statut live",
@@ -578,6 +582,7 @@ const I18N = {
     hdr_final_time: "Temps final",
     lanes_table_title: "Classement live",
     chart_speed: "Vitesse (m/s)",
+    chart_speed_hint: "Δd/Δt ±{w} s",
     chart_cadence: "Cadence (coups/min)",
     chart_rank: "Classement",
     chart_gap: "Écart au leader (m)",
@@ -641,11 +646,13 @@ function applyStaticI18n() {
   setText("nav-results-label",  "nav_results");
   setText("nav-schedule-label", "nav_schedule");
   setText("nav-live-label",     "nav_live");
+  setText("nav-analyse-label",  "nav_analyse");
   setText("btn-notifs-label",   "hdr_notifs");
   setAttr("brand-link", "title", "tt_home");
   setAttr("nav-results-link",  "title", "nav_results");
   setAttr("nav-schedule-link", "title", "nav_schedule");
   setAttr("nav-live-link",     "title", "nav_live");
+  setAttr("nav-analyse-link",  "title", "nav_analyse");
   setAttr("btn-notif", "title", "tt_notifs");
   setAttr("btn-theme", "title", "tt_theme");
   setAttr("btn-more",  "title", "tt_more");
@@ -775,6 +782,72 @@ function fmtSplit(metrePerSecond){
 const LANE_COLORS = ["#ff6b6b","#4dd0a8","#ffb454","#5da7f7","#c084fc","#ec4899","#facc15","#22d3ee"];
 function laneColor(lane, idx){ return LANE_COLORS[((lane.Lane||idx+1)-1) % LANE_COLORS.length]; }
 
+const RECALC_WINDOW = 5;
+
+function recomputeSpeeds(pts, w){
+  const n = pts.length;
+  const out = new Array(n);
+  for(let i=0;i<n;i++){
+    const lo = Math.max(0, i-w);
+    const hi = Math.min(n-1, i+w);
+    const dt = pts[hi].t - pts[lo].t;
+    const dd = pts[hi].d - pts[lo].d;
+    out[i] = (dt > 0) ? (dd / dt) : null;
+  }
+  return out;
+}
+
+function laneSeriesPts(lane){
+  const raw = [];
+  for(const p of (lane.live||[])){
+    const tr = p.raceBoatTracker || {};
+    if(tr.distanceTravelled==null) continue;
+    raw.push({
+      x: tr.distanceTravelled,
+      t: p.trackCount,
+      d: tr.distanceTravelled,
+      _raceBoatId: tr.raceBoatId || null,
+    });
+  }
+  if(!raw.length) return [];
+  const segments = [];
+  let current = [raw[0]];
+  for(let i=1;i<raw.length;i++){
+    const dx = raw[i].x - raw[i-1].x;
+    if(dx < -100 || (raw[i]._raceBoatId && raw[i-1]._raceBoatId && raw[i]._raceBoatId !== raw[i-1]._raceBoatId)){
+      segments.push(current);
+      current = [raw[i]];
+    } else {
+      current.push(raw[i]);
+    }
+  }
+  segments.push(current);
+  let best = segments[0];
+  let bestMax = Math.max(...best.map(p=>p.x));
+  for(const seg of segments.slice(1)){
+    const mx = Math.max(...seg.map(p=>p.x));
+    if(mx > bestMax || (mx === bestMax && seg.length > best.length)){
+      best = seg; bestMax = mx;
+    }
+  }
+  best.sort((a,b)=>a.x-b.x);
+  return best;
+}
+
+function laneSeriesRecalcSpeed(lane, w = RECALC_WINDOW){
+  const pts = laneSeriesPts(lane);
+  if(!pts.length) return [];
+  const vCalc = recomputeSpeeds(pts, w);
+  return pts.map((p,i) =>
+    (vCalc[i]!=null && isFinite(vCalc[i])) ? {x: p.x, y: vCalc[i]} : null
+  ).filter(Boolean);
+}
+
+function laneSeriesForSpec(lane, sp){
+  if(sp.seriesFn) return sp.seriesFn(lane);
+  return laneSeries(lane, sp.getY);
+}
+
 function laneSeries(lane, getY){
   return (lane.live||[])
     .map(p => {
@@ -834,7 +907,7 @@ function makeChart(chartId, title, lanes, specs, opts={}){
     const ys = [];
     for(const l of lanes){
       if(state.hiddenLanes.has(l.id)) continue;
-      for(const p of laneSeries(l, sp.getY)){
+      for(const p of laneSeriesForSpec(l, sp)){
         if(p.x>=xMin && p.x<=xMax) ys.push(p.y);
       }
     }
@@ -853,7 +926,7 @@ function makeChart(chartId, title, lanes, specs, opts={}){
   for(const l of lanes){
     if(state.hiddenLanes.has(l.id)) continue;
     specs.forEach((sp, si) => {
-      const pts = laneSeries(l, sp.getY).filter(p => p.x>=xMin && p.x<=xMax);
+      const pts = laneSeriesForSpec(l, sp).filter(p => p.x>=xMin && p.x<=xMax);
       if(pts.length>=2) series.push({lane:l, color:laneColor(l,0), points:pts, specIdx:si, dashed: sp.dashed});
     });
   }
@@ -1174,13 +1247,14 @@ function renderTrackerHTML(data){
   const xMax = zoom ? zoom.max : totalLength;
 
   // Defaults: speed starts at 3.5 m/s (low at bottom), cadence at 30 inverted (high at top)
-  const speedSpec   = {getY:tr=>tr.metrePerSecond, label:t("spec_speed"),   fmt:v=>v.toFixed(2)+" m/s", yMin:3.5, invertY:true, yDec:1};
+  const speedSpec   = {seriesFn: l => laneSeriesRecalcSpeed(l), label:t("spec_speed"), fmt:v=>v.toFixed(2)+" m/s", yMin:3.5, invertY:true, yDec:1};
+  const speedTitle  = `${t("chart_speed")} <span class="zoom-hint">${t("chart_speed_hint",{w:RECALC_WINDOW})}</span>`;
   const cadenceSpec = {getY:tr=>tr.strokeRate,     label:t("spec_cadence"), fmt:v=>v.toFixed(0)+" s/m", yMin:30,  invertY:true, yDec:0, dashed:true};
   const rankSpec    = {getY:tr=>tr.currentPosition, label:t("spec_rank"),   fmt:v=>"P"+Math.round(v),  yMin:1, yMax:nLanes, yTicks:nLanes-1, yDec:0, yFmt:v=>Math.round(v)};
   const gapSpec     = {getY:tr=>tr.distanceFromLeader, label:t("spec_gap"), fmt:v=>v.toFixed(0)+" m",  yMin:0, yDec:0};
 
   html += `<div class="charts">
-    ${makeChart("speed",   t("chart_speed"),   lanes, [speedSpec],                {xMin, xMax, scaleEditable:true})}
+    ${makeChart("speed",   speedTitle,         lanes, [speedSpec],                {xMin, xMax, scaleEditable:true})}
     ${makeChart("cadence", t("chart_cadence"), lanes, [cadenceSpec],              {xMin, xMax, scaleEditable:true})}
     ${makeChart("rank",    t("chart_rank"),    lanes, [rankSpec],                 {xMin, xMax})}
     ${makeChart("gap",     t("chart_gap"),     lanes, [gapSpec],                  {xMin, xMax, scaleEditable:true})}

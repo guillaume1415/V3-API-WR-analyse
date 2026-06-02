@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>World Rowing — Analyse</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    --bg:#0f1117;
+    --panel:#1a1d27;
+    --panel2:#23273a;
+    --border:#2e3347;
+    --fg:#e2e8f0;
+    --muted:#64748b;
+    --accent:#3b82f6;
+    --accent-hover:#2563eb;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+    --green:#10b981;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--fg);font-family:'Segoe UI',system-ui,sans-serif;height:100%}
+  body{display:flex;flex-direction:column;min-height:100vh}
+
+  header.app-header{
+    background:var(--panel);border-bottom:1px solid var(--border);
+    padding:14px 24px;display:flex;align-items:center;gap:12px;
+    position:sticky;top:0;z-index:100;
+  }
+  header.app-header .logo{
+    width:34px;height:34px;background:var(--accent);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  }
+  header.app-header h1{font-size:1.1rem;font-weight:600}
+  header.app-header p{font-size:0.75rem;color:var(--muted)}
+  header.app-header nav{margin-left:auto;display:flex;gap:8px;align-items:center}
+  header.app-header nav a{
+    padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:500;
+    border:1px solid var(--border);color:var(--muted);text-decoration:none;
+    transition:border-color .15s,color .15s;
+  }
+  header.app-header nav a:hover{border-color:var(--accent);color:var(--accent)}
+  header.app-header nav a.current{
+    border-color:var(--accent);color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+  }
+  .status{font-size:12px;color:var(--muted);margin-left:14px}
+
+  .layout{display:flex;flex:1;min-height:0}
+  aside{
+    width:270px;flex-shrink:0;background:var(--panel);
+    border-right:1px solid var(--border);padding:20px;
+    overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+  }
+  .filter-group label{
+    display:block;font-size:0.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin-bottom:5px;
+  }
+  .filter-group select{
+    width:100%;background:var(--panel2);border:1px solid var(--border);
+    color:var(--fg);padding:8px 10px;border-radius:var(--radius);
+    font-size:0.88rem;outline:none;font-family:inherit;
+  }
+  .filter-group select:focus{border-color:var(--accent)}
+  .btn{
+    width:100%;padding:9px;background:var(--accent);color:#fff;
+    border:none;border-radius:var(--radius);font-size:0.88rem;
+    font-weight:600;cursor:pointer;transition:background .15s;font-family:inherit;
+  }
+  .btn:hover{background:var(--accent-hover)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  aside hr{border:none;border-top:1px solid var(--border)}
+  aside code{background:var(--panel2);padding:2px 5px;border-radius:4px;font-size:0.8rem}
+
+  main{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:20px}
+
+  .section-title{
+    font-size:0.72rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--muted);
+  }
+  .breadcrumb{
+    display:flex;align-items:center;gap:6px;
+    font-size:0.83rem;color:var(--muted);flex-wrap:wrap;
+  }
+  .breadcrumb a{color:var(--accent);cursor:pointer}
+  .breadcrumb a:hover{text-decoration:underline}
+  .breadcrumb .sep{color:var(--border)}
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+  .card{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px;cursor:pointer;
+    transition:border-color .15s,transform .1s;
+  }
+  .card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .card.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+  .card-title{font-weight:600;font-size:0.92rem;margin-bottom:5px}
+  .card-meta{font-size:0.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
+
+  .race-list{display:flex;flex-direction:column;gap:5px}
+  .race-item{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px 14px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;transition:border-color .15s;
+  }
+  .race-item:hover{border-color:var(--accent)}
+  .race-item-name{flex:1;font-weight:500;font-size:0.88rem}
+  .race-item-meta{font-size:0.78rem;color:var(--muted);white-space:nowrap}
+  .race-item .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .group-label{
+    margin:10px 0 4px;font-size:0.72rem;font-weight:700;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
+  }
+  .class-filters{display:flex;flex-wrap:wrap;gap:6px;padding:12px 0 4px}
+  .pill{
+    padding:4px 12px;border-radius:99px;font-size:0.78rem;font-weight:500;
+    cursor:pointer;border:1px solid var(--border);
+    background:var(--panel2);color:var(--muted);
+    transition:border-color .15s,color .15s,background .15s;white-space:nowrap;
+  }
+  .pill:hover{border-color:var(--accent);color:var(--accent)}
+  .pill.active{
+    border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 18%,var(--panel2));
+    color:var(--accent);font-weight:600;
+  }
+
+  .loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:48px;color:var(--muted)}
+  .spinner{
+    width:30px;height:30px;border:3px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:0.88rem}
+  .error-box{
+    background:color-mix(in srgb,var(--bad) 12%,var(--panel));
+    border:1px solid color-mix(in srgb,var(--bad) 40%,transparent);
+    border-radius:var(--radius);padding:14px;color:#fca5a5;font-size:0.84rem;
+  }
+
+  .race-head{display:flex;gap:12px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap}
+  .race-head h2{margin:0;font-size:16px}
+  .race-head .meta{color:var(--muted);font-size:12px}
+  .race-head .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .badge.live{background:var(--green);color:#fff}
+  .badge.replay{background:var(--warn);color:#000}
+  .badge.scheduled{background:var(--border);color:var(--fg)}
+
+  /* Toolbar (nation selector + options) */
+  .analyse-toolbar{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:12px 14px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  }
+  .toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .toolbar-group .lbl{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .nation-pills{display:flex;flex-wrap:wrap;gap:5px}
+  .nation-pill{
+    padding:4px 10px;border-radius:99px;font-size:0.78rem;font-weight:600;
+    cursor:pointer;border:1px solid var(--border);background:var(--panel2);
+    color:var(--fg);transition:border-color .15s,background .15s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .nation-pill:hover{border-color:var(--accent)}
+  .nation-pill.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,var(--panel2));color:var(--accent)}
+  .nation-pill .swatch{width:9px;height:9px;border-radius:50%}
+  .switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:var(--fg)}
+  .switch input{cursor:pointer}
+
+  /* Charts grid */
+  .plot-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:1100px){ .plot-grid{grid-template-columns:1fr} }
+  .plot-card{background:#ffffff;border:1px solid var(--border);border-radius:var(--radius);padding:10px;position:relative}
+  .plot-card .plot-title{font-size:0.82rem;font-weight:600;color:#1a1d27;margin-bottom:4px}
+  .plot-card .plot-sub{font-size:0.72rem;color:#64748b;margin-bottom:6px}
+  .plot-card .plot-tools{color:#64748b}
+  .plot-card .plot-tools input[type="number"]{background:#f8fafc;border-color:#cbd5e1;color:#1a1d27}
+  .plot-card .plot-tools button.reset{background:#f1f5f9;border-color:#cbd5e1;color:#475569}
+  .plot-card .plot-tools button.reset:hover{background:#e2e8f0;color:#1a1d27}
+  .plot{width:100%;height:340px}
+  .plot.tall{height:380px}
+  .plot-card .btn-expand{
+    position:absolute;top:8px;right:10px;z-index:5;
+    background:#f1f5f9;border:1px solid #cbd5e1;color:#475569;
+    width:26px;height:26px;border-radius:6px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;line-height:1;padding:0;
+  }
+  .plot-card .btn-expand:hover{background:#e2e8f0;color:#1a1d27}
+  .plot-card.fullscreen{
+    position:fixed;inset:20px;z-index:9999;padding:20px;margin:0;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .plot-card.fullscreen .plot,
+  .plot-card.fullscreen .plot.tall{height:calc(100vh - 160px)}
+  body.has-fullscreen{overflow:hidden}
+
+  .splits-strip{
+    display:flex;gap:8px;flex-wrap:wrap;font-size:0.78rem;color:var(--muted);
+    padding:6px 0;
+  }
+  .splits-strip b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+  /* Per-plot scale editor */
+  .plot-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px;font-size:11px;color:var(--muted)}
+  .plot-tools .scale-edit{display:inline-flex;gap:4px;align-items:center}
+  .plot-tools input[type="number"]{
+    width:54px;background:var(--panel2);border:1px solid var(--border);
+    color:var(--fg);font-size:11px;padding:2px 4px;border-radius:3px;font-family:inherit;
+  }
+  .plot-tools input[type="number"]::-webkit-outer-spin-button,
+  .plot-tools input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .plot-tools button.reset{
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    cursor:pointer;font-size:10px;padding:1px 5px;border-radius:3px;font-family:inherit;
+  }
+  .plot-tools button.reset:hover{color:var(--fg);background:var(--border)}
+
+  /* Smoothing slider */
+  .smooth-ctrl{display:inline-flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--fg)}
+  .smooth-ctrl input[type="range"]{width:120px;accent-color:var(--accent)}
+  .smooth-ctrl .smooth-val{
+    min-width:24px;text-align:center;font-variant-numeric:tabular-nums;
+    color:var(--accent);font-weight:600;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">📊</div>
+  <div>
+    <h1>World Rowing — Analyse</h1>
+    <p>Lecture par bateau · scatter colorés · splits & corrélations</p>
+  </div>
+  <nav>
+    <a href="index.html">Résultats & Engagés</a>
+    <a href="schedule.html">📅 Programme</a>
+    <a href="live.html">📡 Live</a>
+    <a href="analyse.html" class="current">📊 Analyse</a>
+  </nav>
+  <div class="status">
+    <span id="status">prêt</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="filter-group">
+      <label>Année</label>
+      <select id="sel-year"></select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="sel-category">
+        <option value="World Rowing Championships">World Rowing Championships</option>
+        <option value="World Rowing Under 19 Championships">World Rowing Under 19 Championships</option>
+        <option value="World Rowing Under 23 Championships">World Rowing Under 23 Championships</option>
+        <option value="World Rowing Cup" selected>World Rowing Cup</option>
+        <option value="Olympics">Olympics</option>
+        <option value="Paralympics">Paralympics</option>
+        <option value="Continental Championships">Continental Championships</option>
+        <option value="International Regattas">International Regattas</option>
+      </select>
+    </div>
+    <button class="btn" id="btn-search">Rechercher</button>
+    <hr/>
+    <div style="font-size:0.78rem;color:var(--muted);line-height:1.65;">
+      <p>Choisissez compétition + course, puis sélectionnez un bateau. Vitesse affichée = recalcul Δd/Δt sur la distance GPS (fenêtre ± ticks réglable).</p>
+      <br/>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="use-proxy"/>
+        Utiliser proxy local (port 8765)
+      </label>
+    </div>
+  </aside>
+
+  <main id="main-area">
+    <div class="empty">Bienvenue — lancez une recherche pour afficher les compétitions.</div>
+  </main>
+</div>
+
+<script>
+const API_DIRECT = "https://world-rowing-api.soticcloud.net/stats/api";
+const API_PROXY  = "http://127.0.0.1:8765/stats/api";
+
+const $ = id => document.getElementById(id);
+
+const state = {
+  year: new Date().getFullYear(), category: "World Rowing Cup",
+  searched:false, loadingComps:false, error:null,
+  competitions:[],
+  selectedComp:null, races:[], loadingRaces:false, classFilter:null,
+  selectedRace:null,
+  lastData:null,
+  // analyse-specific
+  selectedLaneId:null,
+  sizeByDps:false,
+  smoothing:0,                // window size for moving average (0 = off)
+  recalcWindow:5,             // demi-fenêtre Δd/Δt en ticks (±5 ≈ 10 s)
+  yScales:{},                 // {plotId: {min, max}} user overrides
+  xScales:{},                 // {plotId: {min, max}} user overrides (currently dual only)
+  cScales:{},                 // {plotId: {min, max}} colorbar overrides
+  // Échelles globales (s'appliquent à tous les axes/couleurs concernés
+  // sauf si un override par graphe existe déjà dans yScales/xScales/cScales)
+  globalScales:{
+    speed:   { min:null, max:null },
+    cadence: { min:null, max:null },
+  },
+};
+
+// Default Y ranges per plot id (autoscale upper if null)
+const Y_DEFAULTS = {
+  speed:   { min: 4.0, max: null },
+  cadence: { min: 32,  max: null },   // axis is inverted in layout
+  rank:    { min: null, max: null },
+  gap:     { min: 0,   max: null },
+  dual:    { min: 4.0, max: null },   // Y = speed
+};
+// Default X ranges (only dual plot uses it; others have X = distance fixed 0-2000)
+const X_DEFAULTS = {
+  dual: { min: 32, max: null },       // X = cadence (spm)
+};
+// Default colorbar ranges (per plot color dimension)
+const C_DEFAULTS = {
+  speed: { min: 32, max: null },      // cadence color on speed plot
+};
+
+// Custom Spectral colorscale (matches the reference screenshot)
+// Low value → dark purple/blue; high value → dark red.
+const SPECTRAL = [
+  [0.000, "#5e4fa2"],
+  [0.111, "#3288bd"],
+  [0.222, "#66c2a5"],
+  [0.333, "#abdda4"],
+  [0.444, "#e6f598"],
+  [0.555, "#fee08b"],
+  [0.666, "#fdae61"],
+  [0.777, "#f46d43"],
+  [0.888, "#d53e4f"],
+  [1.000, "#9e0142"],
+];
+
+const LS_KEY = "wr_analyse_prefs";
+function loadPrefs(){ try { return JSON.parse(localStorage.getItem(LS_KEY))||{}; } catch { return {}; } }
+function savePrefs(p){ localStorage.setItem(LS_KEY, JSON.stringify(p)); }
+const prefs = loadPrefs();
+$("use-proxy").checked = !!prefs.proxy;
+
+function basePath(){ return $("use-proxy").checked ? API_PROXY : API_DIRECT; }
+async function apiFetch(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function buildUrl(path, params){
+  const parts=[];
+  for(const [k,v] of Object.entries(params)){
+    if(v==null) continue;
+    parts.push(encodeURIComponent(k)+"="+encodeURIComponent(v));
+  }
+  return basePath()+path+(parts.length?"?"+parts.join("&"):"");
+}
+async function api(path){ return apiFetch(basePath()+path); }
+
+async function apiCompetitions(year, category){
+  const url = buildUrl("/competition", {
+    "filter[StartDate]": `${year}-12-31T23:59:59.000Z`,
+    "filter[competitionType.competitionCategory.DisplayName]": category,
+    "filterOptions[StartDate]": "lessThanEqualTo",
+    "include": "competitionType,competitionType.competitionCategory,venue,venue.country",
+    "sort[StartDate]": "desc",
+  });
+  const payload = await apiFetch(url);
+  const data = Array.isArray(payload.data) ? payload.data : [];
+  return data.filter(c => String(c.StartDate||"").startsWith(String(year)));
+}
+async function apiRaces(competitionId){
+  const url = buildUrl("/race/", {
+    "include": "raceStatus,racePhase,event.boatClass",
+    "filter[event.competitionId]": competitionId,
+    "sort[date]": "asc",
+    "PageSize": 500,
+  });
+  const payload = await apiFetch(url);
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+async function fetchTracker(raceId){
+  // Analyse → on prend l'endpoint complet (replay). Pas de polling.
+  const d = await api(`/livetracker/${raceId}`);
+  return d.data;
+}
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,
+    c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d){
+  if(!d) return "—";
+  const dt = new Date(d);
+  if(isNaN(dt)) return String(d).slice(0,10);
+  return dt.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});
+}
+function fmtTime(t){ if(!t) return "—"; return t.replace(/^00:/,""); }
+function renderLoading(msg){ return `<div class="loading"><div class="spinner"></div>${esc(msg)}</div>`; }
+
+// ── render flow ────────────────────────────────────────────────────────
+function render(){
+  const m = $("main-area");
+  if(state.error){
+    m.innerHTML = `<div class="error-box"><strong>Erreur</strong> — ${esc(state.error)}<br/><br/>
+      Activez « Utiliser proxy local » et lancez <code>python proxy.py</code>.</div>`;
+    return;
+  }
+  if(state.loadingComps){ m.innerHTML = renderLoading("Recherche des compétitions…"); return; }
+  if(!state.searched){
+    m.innerHTML = `<div class="empty">Bienvenue — lancez une recherche pour afficher les compétitions.</div>`;
+    return;
+  }
+  if(!state.competitions.length){
+    m.innerHTML = `<div class="empty">Aucune compétition trouvée pour cette sélection.</div>`;
+    return;
+  }
+  if(!state.selectedComp){ m.innerHTML = renderCompList(); return; }
+  if(!state.selectedRace){ m.innerHTML = renderRaceList(); return; }
+
+  let html = `<div class="breadcrumb">
+    <a onclick="backToComps()">Compétitions</a>
+    <span class="sep">›</span>
+    <a onclick="backToRaces()">${esc(state.selectedComp.DisplayName||"")}</a>
+    <span class="sep">›</span>
+    <span>${esc(state.selectedRace.DisplayName||"")}</span>
+  </div>`;
+  if(!state.lastData) html += renderLoading("Chargement des données de course…");
+  else html += renderAnalyseHTML(state.lastData);
+  m.innerHTML = html;
+  if(state.lastData) drawAllPlots(state.lastData);
+}
+
+function renderCompList(){
+  let html = `<div>
+    <div class="section-title">Compétitions · ${state.year} · ${esc(state.category)}</div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${state.competitions.length} compétition(s)</div>
+  </div>
+  <div class="cards-grid">`;
+  for(const c of state.competitions){
+    const venue = c.venue?.DisplayName || "—";
+    const country = c.venue?.country?.DisplayName || "";
+    const start = fmtDate(c.StartDate);
+    const end = fmtDate(c.EndDate);
+    html += `<div class="card" onclick="selectComp('${c.id}')">
+      <div class="card-title">${esc(c.DisplayName||c.CompetitionCode||c.id)}</div>
+      <div class="card-meta">
+        <span>📍 ${esc(venue)}${country?", "+esc(country):""}</span>
+        <span>📅 ${start}${end && end!==start?" → "+end:""}</span>
+      </div>
+    </div>`;
+  }
+  return html+`</div>`;
+}
+
+function renderRaceList(){
+  let html = `<div class="breadcrumb">
+    <a onclick="backToComps()">Compétitions</a>
+    <span class="sep">›</span>
+    <span>${esc(state.selectedComp.DisplayName||"")}</span>
+  </div>`;
+  if(state.loadingRaces) return html + renderLoading("Chargement des courses…");
+  if(!state.races.length) return html + `<div class="empty">Aucune course trouvée.</div>`;
+
+  const classes = [...new Set(state.races.map(r => r.event?.boatClass?.DisplayName || "Autre"))];
+  html += `<div><div class="section-title">Courses (${state.races.length})</div></div>`;
+  if(classes.length > 1){
+    html += `<div class="class-filters">
+      <div class="pill ${!state.classFilter?'active':''}" onclick="setClassFilter(null)">Toutes</div>
+      ${classes.map(c => `<div class="pill ${state.classFilter===c?'active':''}" onclick="setClassFilter('${esc(c)}')">${esc(c)}</div>`).join("")}
+    </div>`;
+  }
+  const byDate = {};
+  for(const r of state.races){
+    if(state.classFilter && (r.event?.boatClass?.DisplayName||"Autre") !== state.classFilter) continue;
+    const d = (r.DateString||"").slice(0,10) || "—";
+    (byDate[d] = byDate[d] || []).push(r);
+  }
+  html += `<div class="race-list">`;
+  for(const date of Object.keys(byDate).sort()){
+    html += `<div class="group-label">${fmtDate(date)}</div>`;
+    for(const r of byDate[date]){
+      const cls = r.event?.boatClass?.DisplayName || "";
+      const phase = r.racePhase?.DisplayName || "";
+      let phaseLabel = phase;
+      const full = r.DisplayName || "";
+      if(phase){
+        const m = full.match(new RegExp(phase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + "\\s+([A-Z0-9]+)\\b", "i"));
+        if(m) phaseLabel = `${phase} ${m[1]}`;
+      } else if(full){
+        const after = cls && full.startsWith(cls) ? full.slice(cls.length).trim() : full;
+        phaseLabel = after;
+      }
+      const st = r.raceStatus?.DisplayName || "—";
+      const stClass = /live/i.test(st)?"live":/finished|official/i.test(st)?"replay":"scheduled";
+      const time = (r.DateString||"").slice(11,16);
+      html += `<div class="race-item" onclick="selectRace('${r.id}')">
+        <span class="race-item-name">${esc(cls)} · ${esc(phaseLabel)}</span>
+        <span class="race-item-meta">${time}</span>
+        <span class="badge ${stClass}">${esc(st)}</span>
+      </div>`;
+    }
+  }
+  return html+`</div>`;
+}
+
+// ── analyse view ────────────────────────────────────────────────────────
+const LANE_COLORS = ["#ff6b6b","#4dd0a8","#ffb454","#5da7f7","#c084fc","#ec4899","#facc15","#22d3ee"];
+function laneColor(lane, idx){ return LANE_COLORS[((lane.Lane||idx+1)-1) % LANE_COLORS.length]; }
+
+function getLanes(data){
+  const cfg = data?.config || {};
+  return (cfg.lanes||[]).slice().sort((a,b)=>(a.Lane||99)-(b.Lane||99));
+}
+
+// série pour un bateau, renvoie {x,speed,cadence,rank,gap,dps}
+//
+// ⚠ L'API peut concaténer plusieurs courses dans `lane.live[]` (réutilisation
+// de la même lane id à travers des sessions). On détecte les resets de
+// distance (saut négatif > 100 m) et on découpe en segments ; on garde
+// le segment dont la distance max est la plus proche du totalLength visé.
+function laneSeries(lane){
+  const raw = [];
+  for(const p of (lane.live||[])){
+    const t = p.raceBoatTracker || {};
+    if(t.distanceTravelled==null) continue;
+    const speed = t.metrePerSecond;
+    const cad = t.strokeRate;
+    raw.push({
+      x: t.distanceTravelled,
+      t: p.trackCount,             // tick (≈ 1 seconde)
+      d: t.distanceTravelled,      // alias explicite pour la dérivée Δd/Δt
+      speed, cadence: cad,
+      rank: t.currentPosition,
+      gap: t.distanceFromLeader,
+      dps: (speed && cad) ? (speed * 60 / cad) : null,
+      _raceBoatId: t.raceBoatId || null,
+      _trackCount: p.trackCount,
+    });
+  }
+  if(!raw.length) return [];
+
+  // Découpe en segments à chaque reset (chute brutale de distance)
+  const segments = [];
+  let current = [raw[0]];
+  for(let i=1;i<raw.length;i++){
+    const dx = raw[i].x - raw[i-1].x;
+    // reset si saut très négatif OU si raceBoatId change
+    if(dx < -100 || (raw[i]._raceBoatId && raw[i-1]._raceBoatId && raw[i]._raceBoatId !== raw[i-1]._raceBoatId)){
+      segments.push(current);
+      current = [raw[i]];
+    } else {
+      current.push(raw[i]);
+    }
+  }
+  segments.push(current);
+
+  // Garde le segment dont la distance max est la plus grande (= course complète).
+  // En cas d'égalité, on prend le segment le plus dense (plus de points).
+  let best = segments[0];
+  let bestMax = Math.max(...best.map(p=>p.x));
+  for(const seg of segments.slice(1)){
+    const mx = Math.max(...seg.map(p=>p.x));
+    if(mx > bestMax || (mx === bestMax && seg.length > best.length)){
+      best = seg; bestMax = mx;
+    }
+  }
+  // Tri propre (au sein du segment retenu, les points sont déjà ~ordonnés)
+  best.sort((a,b)=>a.x-b.x);
+  return best;
+}
+
+function plotToolsHTML(plotId, unit, xOpts, cOpts){
+  const cur = state.yScales[plotId] || {};
+  const def = Y_DEFAULTS[plotId] || {};
+  const mn = cur.min!=null ? cur.min : (def.min!=null ? def.min : "");
+  const mx = cur.max!=null ? cur.max : (def.max!=null ? def.max : "");
+  const hasOverride = (cur.min!=null && cur.min!==def.min) || (cur.max!=null && cur.max!==def.max);
+  let html = `<div class="plot-tools">
+    <span class="scale-edit">Y (${unit}) :
+      <input type="number" step="0.1" value="${mn}" placeholder="auto"
+        oninput="setYScale('${plotId}','min',this.value)"/>
+      →
+      <input type="number" step="0.1" value="${mx}" placeholder="auto"
+        oninput="setYScale('${plotId}','max',this.value)"/>
+      ${hasOverride?`<button class="reset" onclick="resetYScale('${plotId}')">↺</button>`:""}
+    </span>`;
+  if(xOpts){
+    const xcur = state.xScales[plotId] || {};
+    const xdef = xOpts.def || {};
+    const xmn = xcur.min!=null ? xcur.min : (xdef.min!=null ? xdef.min : "");
+    const xmx = xcur.max!=null ? xcur.max : (xdef.max!=null ? xdef.max : "");
+    const hasX = (xcur.min!=null && xcur.min!==xdef.min) || (xcur.max!=null && xcur.max!==xdef.max);
+    html += `<span class="scale-edit">X (${xOpts.unit}) :
+      <input type="number" step="1" value="${xmn}" placeholder="auto"
+        oninput="setXScale('${plotId}','min',this.value)"/>
+      →
+      <input type="number" step="1" value="${xmx}" placeholder="auto"
+        oninput="setXScale('${plotId}','max',this.value)"/>
+      ${hasX?`<button class="reset" onclick="resetXScale('${plotId}')">↺</button>`:""}
+    </span>`;
+  }
+  if(cOpts){
+    const ccur = state.cScales[plotId] || {};
+    const cdef = cOpts.def || {};
+    const cmn = ccur.min!=null ? ccur.min : (cdef.min!=null ? cdef.min : "");
+    const cmx = ccur.max!=null ? ccur.max : (cdef.max!=null ? cdef.max : "");
+    const hasC = (ccur.min!=null && ccur.min!==cdef.min) || (ccur.max!=null && ccur.max!==cdef.max);
+    html += `<span class="scale-edit">Couleur ${cOpts.label} (${cOpts.unit}) :
+      <input type="number" step="1" value="${cmn}" placeholder="auto"
+        oninput="setCScale('${plotId}','min',this.value)"/>
+      →
+      <input type="number" step="1" value="${cmx}" placeholder="auto"
+        oninput="setCScale('${plotId}','max',this.value)"/>
+      ${hasC?`<button class="reset" onclick="resetCScale('${plotId}')">↺</button>`:""}
+    </span>`;
+  }
+  return html+`</div>`;
+}
+
+function renderAnalyseHTML(data){
+  if(!data || !data.config) return '<div class="error-box">Pas de données disponibles pour cette course.</div>';
+  const cfg = data.config;
+  const race = cfg.race || {};
+  const lanes = getLanes(data);
+
+  // Auto-select first lane if none / invalid
+  if(!state.selectedLaneId || !lanes.find(l=>l.id===state.selectedLaneId)){
+    // Pick the leader (Rank 1) if known, else lane 1
+    const leader = lanes.find(l => l.currentPoint?.raceBoatTracker?.currentPosition === 1)
+                || lanes.find(l => l.Rank === 1)
+                || lanes[0];
+    state.selectedLaneId = leader?.id || null;
+  }
+
+  const statusName = race.raceStatus?.DisplayName || "—";
+  const statusClass = /live/i.test(statusName) ? "live" : /finished|official/i.test(statusName) ? "replay" : "scheduled";
+  const cls = race.event?.boatClass?.DisplayName || race.event?.DisplayName || "";
+
+  // Header
+  let html = `
+    <div class="race-head">
+      <h2>${esc(race.DisplayName||"")}</h2>
+      <span class="meta">${esc(cls)}</span>
+      <span class="badge ${statusClass}">${esc(statusName)}</span>
+      <span class="meta">${(race.DateString||"").slice(0,16).replace("T"," ")}</span>
+    </div>`;
+
+  // Toolbar
+  html += `<div class="analyse-toolbar">
+    <div class="toolbar-group">
+      <span class="lbl">Bateau</span>
+      <div class="nation-pills">`;
+  for(const l of lanes){
+    const col = laneColor(l,0);
+    const act = state.selectedLaneId===l.id ? "active":"";
+    html += `<span class="nation-pill ${act}" onclick="selectLane('${l.id}')">
+      <span class="swatch" style="background:${col}"></span>${esc(l.DisplayName||"?")}
+    </span>`;
+  }
+  html += `</div></div>
+    <div class="toolbar-group">
+      <label class="switch">
+        <input type="checkbox" id="opt-size-dps" ${state.sizeByDps?"checked":""}/>
+        Taille = DPS (distance/coup)
+      </label>
+    </div>
+    <div class="toolbar-group">
+      <span class="lbl">Lissage</span>
+      <div class="smooth-ctrl">
+        <input type="range" id="opt-smooth" min="0" max="15" step="1" value="${state.smoothing}"/>
+        <span class="smooth-val" id="smooth-val">${state.smoothing}</span>
+      </div>
+    </div>
+    <div class="toolbar-group">
+      <span class="lbl">Vitesse recalculée (Δd/Δt)</span>
+      <span style="font-size:11px;color:var(--muted)">fenêtre ±</span>
+      <input type="number" id="opt-recalc-w" min="1" max="20" step="1"
+        value="${state.recalcWindow}"
+        style="width:46px;background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:2px 4px;border-radius:4px;font-family:inherit;font-size:12px"/>
+      <span style="font-size:11px;color:var(--muted)">ticks</span>
+    </div>
+    <div class="toolbar-group" style="gap:6px">
+      <span class="lbl">Vitesse globale (m/s)</span>
+      <input type="number" step="0.1" placeholder="auto"
+        value="${state.globalScales.speed.min ?? ""}"
+        oninput="setGlobalScale('speed','min',this.value)"
+        style="width:60px;background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:3px 5px;border-radius:4px;font-family:inherit;font-size:12px"/>
+      →
+      <input type="number" step="0.1" placeholder="auto"
+        value="${state.globalScales.speed.max ?? ""}"
+        oninput="setGlobalScale('speed','max',this.value)"
+        style="width:60px;background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:3px 5px;border-radius:4px;font-family:inherit;font-size:12px"/>
+    </div>
+    <div class="toolbar-group" style="gap:6px">
+      <span class="lbl">Cadence globale (spm)</span>
+      <input type="number" step="1" placeholder="auto"
+        value="${state.globalScales.cadence.min ?? ""}"
+        oninput="setGlobalScale('cadence','min',this.value)"
+        style="width:60px;background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:3px 5px;border-radius:4px;font-family:inherit;font-size:12px"/>
+      →
+      <input type="number" step="1" placeholder="auto"
+        value="${state.globalScales.cadence.max ?? ""}"
+        oninput="setGlobalScale('cadence','max',this.value)"
+        style="width:60px;background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:3px 5px;border-radius:4px;font-family:inherit;font-size:12px"/>
+    </div>
+  </div>`;
+
+  // Splits banner (pour le bateau sélectionné)
+  const selLane = lanes.find(l => l.id === state.selectedLaneId);
+  if(selLane){
+    const inters = (selLane.intermediates||[]).slice().sort((a,b)=>
+      parseInt((a.distance?.DisplayName||"").replace(/\D/g,"")) - parseInt((b.distance?.DisplayName||"").replace(/\D/g,""))
+    );
+    if(inters.length){
+      html += `<div class="splits-strip"><span>Splits — ${esc(selLane.DisplayName)} :</span>`;
+      let prev = 0;
+      for(const i of inters){
+        const dKey = (i.distance?.DisplayName||"").replace(/^d|m$/g,"");
+        const tStr = fmtTime(i.ResultTime);
+        // segment split (delta time over 500m)
+        const totalSec = parseTime(i.ResultTime);
+        const seg = totalSec!=null ? totalSec - prev : null;
+        const segStr = seg!=null ? formatSec(seg) : "—";
+        prev = totalSec || prev;
+        html += `<span>${dKey}m: <b>${tStr}</b> <span style="opacity:.6">(${segStr})</span></span>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // 5 plots — chaque carte a un bouton plein écran
+  const exp = id => `<button class="btn-expand" title="Plein écran" onclick="toggleFullscreen('${id}')">⛶</button>`;
+  html += `<div class="plot-grid">
+    <div class="plot-card" id="card-speed">
+      ${exp("card-speed")}
+      <div class="plot-title">Vitesse vs distance</div>
+      <div class="plot-sub">Y = vitesse (m/s) · couleur = cadence (spm) · splits 500m annotés</div>
+      ${plotToolsHTML("speed","m/s",null,{label:"cadence",unit:"spm",def:C_DEFAULTS.speed})}
+      <div id="plot-speed" class="plot"></div>
+    </div>
+    <div class="plot-card" id="card-cadence">
+      ${exp("card-cadence")}
+      <div class="plot-title">Cadence vs distance</div>
+      <div class="plot-sub">Y = cadence (spm, le plus haut en haut) · couleur = vitesse (m/s)</div>
+      ${plotToolsHTML("cadence","spm")}
+      <div id="plot-cadence" class="plot"></div>
+    </div>
+    <div class="plot-card" id="card-rank">
+      ${exp("card-rank")}
+      <div class="plot-title">Classement (rang) vs distance</div>
+      <div class="plot-sub">Y = rang (1 en haut) · couleur = vitesse (m/s)</div>
+      <div id="plot-rank" class="plot"></div>
+    </div>
+    <div class="plot-card" id="card-gap">
+      ${exp("card-gap")}
+      <div class="plot-title">Écart au leader (m) vs distance</div>
+      <div class="plot-sub">Y = écart (0 en haut = leader, valeurs grandes en bas) · couleur = vitesse (m/s)</div>
+      ${plotToolsHTML("gap","m")}
+      <div id="plot-gap" class="plot"></div>
+    </div>
+    <div class="plot-card" id="card-dual" style="grid-column:1/-1">
+      ${exp("card-dual")}
+      <div class="plot-title">Corrélation Cadence × Vitesse</div>
+      <div class="plot-sub">X = cadence (spm) · Y = vitesse (m/s) · couleur = distance (m)</div>
+      ${plotToolsHTML("dual","m/s",{unit:"spm",def:X_DEFAULTS.dual})}
+      <div id="plot-dual" class="plot tall"></div>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+// ── Vitesse recalculée Δd/Δt sur fenêtre centrée ─────────────────────────
+// L'API expose `distanceTravelled` (position cumulée, entier en mètres)
+// et `trackCount` (index temporel monotone, pas = 1 seconde).
+// La position est filtrée en interne par le module GNSS → quasi propre.
+// La dérivée centrée sur ±w ticks (= 2w secondes) élimine les artefacts
+// "burst" du multipath qui polluent metrePerSecond.
+//
+// pts : tableau de {t, d, ...}.  w : demi-fenêtre en ticks (5 → 10 s).
+// Renvoie un tableau de vitesses (m/s) de même longueur.
+function recomputeSpeeds(pts, w){
+  const n = pts.length;
+  const out = new Array(n);
+  for(let i=0;i<n;i++){
+    // Fenêtre asymétrique au bord pour ne pas perdre les extrémités
+    const lo = Math.max(0, i-w);
+    const hi = Math.min(n-1, i+w);
+    const dt = pts[hi].t - pts[lo].t;
+    const dd = pts[hi].d - pts[lo].d;
+    out[i] = (dt > 0) ? (dd / dt) : null;
+  }
+  return out;
+}
+
+// Centered moving average. window = number of neighbours on each side (so total = 2*w+1).
+// Handles nulls. Returns new array same length.
+function smoothArray(arr, window){
+  if(!window || window<=0) return arr.slice();
+  const n = arr.length;
+  const out = new Array(n);
+  for(let i=0;i<n;i++){
+    let sum=0, cnt=0;
+    for(let j=Math.max(0,i-window); j<=Math.min(n-1, i+window); j++){
+      const v = arr[j];
+      if(v!=null && isFinite(v)){ sum+=v; cnt++; }
+    }
+    out[i] = cnt ? sum/cnt : null;
+  }
+  return out;
+}
+
+function parseTime(t){
+  if(!t) return null;
+  // "00:06:48.08" → seconds
+  const m = t.match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);
+  if(!m) return null;
+  return +m[1]*3600 + +m[2]*60 + +m[3];
+}
+function formatSec(s){
+  if(s==null || !isFinite(s)) return "—";
+  const m = Math.floor(s/60);
+  const sec = s - m*60;
+  return `${m}:${sec.toFixed(1).padStart(4,"0")}`;
+}
+
+// ── Plotly drawing ─────────────────────────────────────────────────────
+function drawAllPlots(data){
+  const lanes = getLanes(data);
+  const lane = lanes.find(l => l.id === state.selectedLaneId);
+  if(!lane) return;
+  const pts = laneSeries(lane);
+  if(!pts.length) return;
+
+  // wire toolbar
+  const opt = $("opt-size-dps");
+  if(opt){
+    opt.onchange = () => { state.sizeByDps = opt.checked; drawAllPlots(state.lastData); };
+  }
+  const smooth = $("opt-smooth");
+  const smoothVal = $("smooth-val");
+  if(smooth){
+    smooth.oninput = () => {
+      state.smoothing = +smooth.value;
+      if(smoothVal) smoothVal.textContent = state.smoothing;
+      drawAllPlots(state.lastData);
+    };
+  }
+  const recalcW = $("opt-recalc-w");
+  if(recalcW){
+    recalcW.oninput = () => {
+      const v = parseInt(recalcW.value);
+      if(isFinite(v) && v>=1 && v<=20){
+        state.recalcWindow = v;
+        clearTimeout(_scaleDebounce);
+        _scaleDebounce = setTimeout(() => drawAllPlots(state.lastData), 200);
+      }
+    };
+  }
+  // Split annotations from intermediates (avg speed per segment between intermediates)
+  const inters = (lane.intermediates||[])
+    .map(i => ({
+      d: parseInt((i.distance?.DisplayName||"").replace(/\D/g,"")),
+      t: parseTime(i.ResultTime),
+    }))
+    .filter(i => isFinite(i.d) && i.t!=null)
+    .sort((a,b)=>a.d-b.d);
+
+  // Per-segment annotations
+  let prevD = 0, prevT = 0;
+  const splitAnnotations = [];
+  for(const i of inters){
+    const segDist = i.d - prevD;
+    const segTime = i.t - prevT;
+    if(segDist>0 && segTime>0){
+      splitAnnotations.push({
+        x: (prevD + i.d)/2,
+        text: `<b>${formatSec(segTime)}</b>`,
+        segStart: prevD, segEnd: i.d,
+      });
+    }
+    prevD = i.d; prevT = i.t;
+  }
+  const totalTime = inters.length ? formatSec(inters[inters.length-1].t) : null;
+
+  // Common helpers
+  const xs = pts.map(p=>p.x);
+  let rawSpeeds = pts.map(p=>p.speed);
+  let rawCads   = pts.map(p=>p.cadence);
+  const rawGaps = pts.map(p=>p.gap);
+  const ranks   = pts.map(p=>p.rank);            // never smoothed (integer)
+
+  // Vitesse recalculée Δd/Δt (dérivée centrée sur distance cumulée)
+  {
+    const w = Math.max(1, state.recalcWindow|0);
+    const vCalc = recomputeSpeeds(pts, w);
+    rawSpeeds = vCalc.map((v,i) => (v!=null && isFinite(v)) ? v : pts[i].speed);
+  }
+  // Recalcule DPS avec les vitesses recalculées
+  const rawDps = rawSpeeds.map((s,i) => {
+    const c = rawCads[i];
+    return (s && c) ? (s * 60 / c) : null;
+  });
+
+  // Apply smoothing
+  const w = state.smoothing|0;
+  const speeds = smoothArray(rawSpeeds, w);
+  const cads   = smoothArray(rawCads,   w);
+  const gaps   = smoothArray(rawGaps,   w);
+  const dpsArr = smoothArray(rawDps,    w);
+
+  // Mapping plotId/axe -> dimension globale (vitesse ou cadence)
+  // pour fallback quand aucun override par graphe n'existe.
+  function globalFor(plotId, axis){
+    // axis: 'y' | 'x' | 'c'
+    const map = {
+      "speed:y":"speed", "dual:y":"speed", "gap:c":"speed",
+      "cadence:y":"cadence", "dual:x":"cadence", "speed:c":"cadence",
+    };
+    const key = map[`${plotId}:${axis}`];
+    return key ? state.globalScales[key] : null;
+  }
+
+  // Apply user X scale override (currently used by dual plot)
+  function xAxisSpec(plotId, baseSpec={}){
+    const cur = state.xScales[plotId] || {};
+    const def = X_DEFAULTS[plotId] || {};
+    const glob = globalFor(plotId,"x") || {};
+    const mn = cur.min!=null ? cur.min : (glob.min!=null ? glob.min : def.min);
+    const mx = cur.max!=null ? cur.max : (glob.max!=null ? glob.max : def.max);
+    const spec = {...baseSpec, gridcolor:"#e2e8f0", zerolinecolor:"#cbd5e1", linecolor:"#cbd5e1"};
+    if(mn!=null && mx!=null){ spec.range = [mn,mx]; }
+    return spec;
+  }
+
+  // Apply user scale override or default to a plot's Y axis spec
+  function yAxisSpec(plotId, baseSpec={}){
+    const cur = state.yScales[plotId] || {};
+    const def = Y_DEFAULTS[plotId] || {};
+    const glob = globalFor(plotId,"y") || {};
+    const mn = cur.min!=null ? cur.min : (glob.min!=null ? glob.min : def.min);
+    const mx = cur.max!=null ? cur.max : (glob.max!=null ? glob.max : def.max);
+    const spec = {...baseSpec, gridcolor:"#e2e8f0", zerolinecolor:"#cbd5e1", linecolor:"#cbd5e1"};
+    if(mn!=null && mx!=null){
+      spec.range = baseSpec.autorange==="reversed" ? [mx,mn] : [mn,mx];
+      delete spec.autorange;
+    } else if(mn!=null || mx!=null){
+      spec.autorange = baseSpec.autorange || true;
+    }
+    return spec;
+  }
+
+  // Color (cmin/cmax) avec fallback par graphe + global
+  function cRange(plotId, validVals, defObj){
+    const cCur = state.cScales[plotId] || {};
+    const cDef = defObj || {};
+    const glob = globalFor(plotId,"c") || {};
+    const mn = cCur.min!=null ? cCur.min : (glob.min!=null ? glob.min : cDef.min);
+    const mx = cCur.max!=null ? cCur.max : (glob.max!=null ? glob.max : cDef.max);
+    const v = validVals.filter(x => x!=null && isFinite(x));
+    const autoMin = v.length ? Math.min(...v) : 0;
+    const autoMax = v.length ? Math.max(...v) : 1;
+    return { cmin: mn!=null ? mn : autoMin, cmax: mx!=null ? mx : autoMax };
+  }
+
+  // Marker size: constant or DPS-based
+  function sizes(arr){
+    if(!state.sizeByDps) return 7;
+    // Normalise around mean
+    const valid = arr.filter(v=>v!=null && isFinite(v));
+    if(!valid.length) return 7;
+    const mn = Math.min(...valid), mx = Math.max(...valid);
+    if(mx===mn) return 8;
+    return arr.map(v => v==null ? 4 : 4 + 12*(v-mn)/(mx-mn));
+  }
+
+  const layoutBase = {
+    paper_bgcolor: "#ffffff",
+    plot_bgcolor: "#ffffff",
+    font: { color: "#1a1d27", family: "Segoe UI,system-ui,sans-serif", size: 11 },
+    margin: { l:55, r:75, t:28, b:42 },
+    xaxis: { title: "Distance (m)", gridcolor: "#e2e8f0", zerolinecolor:"#cbd5e1", range:[0,2000], linecolor:"#cbd5e1" },
+    yaxis: { gridcolor: "#e2e8f0", zerolinecolor:"#cbd5e1", linecolor:"#cbd5e1" },
+    showlegend: false,
+    hovermode: "closest",
+  };
+  const config = { displaylogo:false, responsive:true, modeBarButtonsToRemove:["lasso2d","select2d"] };
+
+  // Helper to build split annotations (text above plot area)
+  function buildSplitAnnots(yrefTop=true){
+    return splitAnnotations.map(s => ({
+      x: s.x, y: 1, xref:"x", yref:"paper",
+      text: s.text, showarrow:false,
+      font: { size: 11, color: "#e2e8f0" },
+      bgcolor: "rgba(35,39,58,0.65)", bordercolor:"#2e3347", borderwidth:1, borderpad:3,
+      yanchor: "bottom",
+    })).concat(totalTime ? [{
+      x: 1000, y: 1.12, xref:"x", yref:"paper",
+      text: `Temps final : <b>${totalTime}</b>`,
+      showarrow: false, font:{size:12, color:"#5da7f7"},
+      yanchor: "bottom",
+    }] : []);
+  }
+
+  function buildSplitShapes(){
+    // dashed vertical lines at split boundaries (500, 1000, 1500…)
+    const shapes = splitAnnotations.map(s => ({
+      type:"line", xref:"x", yref:"paper",
+      x0:s.segEnd, x1:s.segEnd, y0:0, y1:1,
+      line:{color:"#3b82f6", width:1, dash:"dot"},
+      opacity: 0.35,
+    }));
+    return shapes;
+  }
+
+  // Toutes les colorscales : SPECTRAL non-inversée → bas=violet, haut=rouge.
+
+  // ── Plot 1: Speed vs Distance, color = cadence ──────────────────────
+  {
+    const cr = cRange("speed", cads, C_DEFAULTS.speed);
+    // Remplace les nulls par cmin pour que le point reste affiché (scattergl masque sinon)
+    const cadColor = cads.map(v => (v!=null && isFinite(v)) ? v : cr.cmin);
+
+    const trace = {
+      x: xs, y: speeds, mode:"markers", type:"scattergl",
+      marker:{
+        size: sizes(dpsArr),
+        color: cadColor,
+        cmin: cr.cmin, cmax: cr.cmax,
+        colorscale: SPECTRAL,
+        colorbar: { title:{text:"Cadence (spm)", font:{size:10}}, thickness:10, len:0.85 },
+        line: { width:0.4, color:"rgba(0,0,0,0.4)" },
+      },
+      customdata: cads.map(v => v),
+      hovertemplate: "Dist: %{x:.0f} m<br>Vitesse: %{y:.2f} m/s<br>Cadence: %{customdata:.0f} spm<extra></extra>",
+    };
+    const layout = {...layoutBase,
+      yaxis: yAxisSpec("speed", {title:"Vitesse (m/s)"}),
+      annotations: buildSplitAnnots(),
+      shapes: buildSplitShapes(),
+    };
+    Plotly.react("plot-speed", [trace], layout, config);
+  }
+
+  // ── Plot 2: Cadence vs Distance, color = speed (sens NORMAL Y) ─────
+  {
+    const cr = cRange("cadence", speeds, {});
+    const trace = {
+      x: xs, y: cads, mode:"markers", type:"scattergl",
+      marker:{
+        size: sizes(dpsArr),
+        color: speeds,
+        cmin: cr.cmin, cmax: cr.cmax,
+        colorscale: SPECTRAL,
+        colorbar: { title:{text:"Vitesse (m/s)", font:{size:10}}, thickness:10, len:0.85 },
+        line: { width:0.4, color:"rgba(0,0,0,0.4)" },
+      },
+      hovertemplate: "Dist: %{x:.0f} m<br>Cadence: %{y:.0f} spm<br>Vitesse: %{marker.color:.2f} m/s<extra></extra>",
+    };
+    const layout = {...layoutBase,
+      yaxis: yAxisSpec("cadence", {title:"Cadence (coups/min)"}),
+      annotations: buildSplitAnnots(),
+      shapes: buildSplitShapes(),
+    };
+    Plotly.react("plot-cadence", [trace], layout, config);
+  }
+
+  // ── Plot 3: Rank vs Distance, color = speed, inverted Y (1 en haut) ─
+  {
+    const nLanes = lanes.length;
+    const cr = cRange("rank", speeds, {});
+    const trace = {
+      x: xs, y: ranks, mode:"markers", type:"scattergl",
+      marker:{
+        size: sizes(dpsArr),
+        color: speeds,
+        cmin: cr.cmin, cmax: cr.cmax,
+        colorscale: SPECTRAL,
+        colorbar: { title:{text:"Vitesse (m/s)", font:{size:10}}, thickness:10, len:0.85 },
+        line: { width:0.4, color:"rgba(0,0,0,0.4)" },
+      },
+      hovertemplate: "Dist: %{x:.0f} m<br>Rang: P%{y}<br>Vitesse: %{marker.color:.2f} m/s<extra></extra>",
+    };
+    const layout = {...layoutBase,
+      yaxis: {...layoutBase.yaxis, title:"Rang", autorange:"reversed", dtick:1, range:[nLanes+0.5,0.5]},
+      annotations: buildSplitAnnots(),
+      shapes: buildSplitShapes(),
+    };
+    Plotly.react("plot-rank", [trace], layout, config);
+  }
+
+  // ── Plot 4: Écart au leader vs Distance, color = VITESSE, Y inversé
+  //    (0 en haut = leader, valeurs grandes = plus loin = en bas)
+  {
+    const cr = cRange("gap", speeds, {});
+    const trace = {
+      x: xs, y: gaps, mode:"markers", type:"scattergl",
+      marker:{
+        size: sizes(dpsArr),
+        color: speeds,
+        cmin: cr.cmin, cmax: cr.cmax,
+        colorscale: SPECTRAL,
+        colorbar: { title:{text:"Vitesse (m/s)", font:{size:10}}, thickness:10, len:0.85 },
+        line: { width:0.4, color:"rgba(0,0,0,0.4)" },
+      },
+      hovertemplate: "Dist: %{x:.0f} m<br>Écart: %{y:.1f} m<br>Vitesse: %{marker.color:.2f} m/s<extra></extra>",
+    };
+    const layout = {...layoutBase,
+      yaxis: yAxisSpec("gap", {title:"Écart au leader (m)", autorange:"reversed", rangemode:"tozero"}),
+      annotations: buildSplitAnnots(),
+      shapes: buildSplitShapes(),
+    };
+    Plotly.react("plot-gap", [trace], layout, config);
+  }
+
+  // ── Plot 5: Cadence × Vitesse correlation, color = distance ─────────
+  {
+    const cr = cRange("dual", xs, {});
+    const trace = {
+      x: cads, y: speeds, mode:"markers", type:"scattergl",
+      marker:{
+        size: sizes(dpsArr),
+        color: xs,
+        cmin: cr.cmin, cmax: cr.cmax,
+        colorscale: SPECTRAL,
+        colorbar: { title:{text:"Distance (m)", font:{size:10}}, thickness:10, len:0.85 },
+        line: { width:0.4, color:"rgba(0,0,0,0.4)" },
+      },
+      hovertemplate: "Cadence: %{x:.0f} spm<br>Vitesse: %{y:.2f} m/s<br>Distance: %{marker.color:.0f} m<extra></extra>",
+    };
+    const layout = {...layoutBase,
+      margin: { l:55, r:75, t:18, b:50 },
+      xaxis: xAxisSpec("dual", {title:"Cadence (coups/min)"}),
+      yaxis: yAxisSpec("dual", {title:"Vitesse (m/s)"}),
+    };
+    Plotly.react("plot-dual", [trace], layout, config);
+  }
+}
+
+// ── per-plot Y scale controls (called from inline oninput) ──────────────
+let _scaleDebounce = null;
+function setYScale(plotId, which, val){
+  const v = (val===""||val==null) ? null : parseFloat(val);
+  if(v!=null && !isFinite(v)) return;
+  const cur = state.yScales[plotId] || {};
+  state.yScales[plotId] = {...cur, [which]: v};
+  // debounce to avoid redraw on every keystroke
+  clearTimeout(_scaleDebounce);
+  _scaleDebounce = setTimeout(() => drawAllPlots(state.lastData), 250);
+}
+function resetYScale(plotId){
+  delete state.yScales[plotId];
+  render();   // re-render to refresh the inputs + button
+}
+function setXScale(plotId, which, val){
+  const v = (val===""||val==null) ? null : parseFloat(val);
+  if(v!=null && !isFinite(v)) return;
+  const cur = state.xScales[plotId] || {};
+  state.xScales[plotId] = {...cur, [which]: v};
+  clearTimeout(_scaleDebounce);
+  _scaleDebounce = setTimeout(() => drawAllPlots(state.lastData), 250);
+}
+function resetXScale(plotId){
+  delete state.xScales[plotId];
+  render();
+}
+function setCScale(plotId, which, val){
+  const v = (val===""||val==null) ? null : parseFloat(val);
+  if(v!=null && !isFinite(v)) return;
+  const cur = state.cScales[plotId] || {};
+  state.cScales[plotId] = {...cur, [which]: v};
+  clearTimeout(_scaleDebounce);
+  _scaleDebounce = setTimeout(() => drawAllPlots(state.lastData), 250);
+}
+function resetCScale(plotId){
+  delete state.cScales[plotId];
+  render();
+}
+// Échelles globales (vitesse / cadence) appliquées à tous les graphes concernés
+function setGlobalScale(dim, which, val){
+  const v = (val===""||val==null) ? null : parseFloat(val);
+  if(v!=null && !isFinite(v)) return;
+  if(!state.globalScales[dim]) state.globalScales[dim] = {min:null,max:null};
+  state.globalScales[dim][which] = v;
+  clearTimeout(_scaleDebounce);
+  _scaleDebounce = setTimeout(() => drawAllPlots(state.lastData), 250);
+}
+
+// Plein écran d'une carte de graphe
+function toggleFullscreen(cardId){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  const isFull = card.classList.toggle("fullscreen");
+  document.body.classList.toggle("has-fullscreen", isFull);
+  // Re-layout Plotly après changement de taille
+  const plotEl = card.querySelector(".plot");
+  if(plotEl && window.Plotly) {
+    requestAnimationFrame(() => Plotly.Plots.resize(plotEl));
+  }
+}
+
+// ── actions ────────────────────────────────────────────────────────────
+async function search(){
+  state.year = $("sel-year").value;
+  state.category = $("sel-category").value;
+  state.searched = true; state.loadingComps = true; state.error = null;
+  state.competitions = []; state.selectedComp = null; state.selectedRace = null;
+  state.lastData = null;
+  $("btn-search").disabled = true;
+  render();
+  try { state.competitions = await apiCompetitions(state.year, state.category); }
+  catch(e){ state.error = e.message; }
+  finally { state.loadingComps = false; $("btn-search").disabled = false; render(); }
+}
+
+async function selectComp(id){
+  const c = state.competitions.find(x=>x.id===id); if(!c) return;
+  state.selectedComp = c; state.selectedRace = null;
+  state.races = []; state.loadingRaces = true; state.classFilter = null;
+  render();
+  try { state.races = await apiRaces(id); }
+  catch(e){ state.error = e.message; }
+  finally { state.loadingRaces = false; render(); }
+}
+
+function setClassFilter(c){ state.classFilter = c; render(); }
+
+async function selectRace(id){
+  const r = state.races.find(x=>x.id===id); if(!r) return;
+  state.selectedRace = r;
+  state.lastData = null;
+  state.selectedLaneId = null;
+  render();
+  try {
+    state.lastData = await fetchTracker(id);
+    $("status").textContent = "ok";
+  } catch(e){
+    $("status").textContent = "erreur: "+e.message;
+    state.error = e.message;
+  }
+  render();
+}
+
+function selectLane(laneId){
+  state.selectedLaneId = laneId;
+  render();
+}
+
+function backToComps(){ state.selectedComp = null; state.selectedRace = null; state.lastData = null; render(); }
+function backToRaces(){ state.selectedRace = null; state.lastData = null; render(); }
+
+// ── wiring ─────────────────────────────────────────────────────────────
+(function(){
+  const sel = $("sel-year");
+  const cur = new Date().getFullYear();
+  for(let y=cur; y>=1990; y--){
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
+$("btn-search").addEventListener("click", search);
+$("use-proxy").addEventListener("change", () => { prefs.proxy = $("use-proxy").checked; savePrefs(prefs); });
+
+render();
+</script>
+</body>
+</html>
