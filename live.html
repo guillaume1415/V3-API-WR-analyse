@@ -158,14 +158,25 @@
   }
 
   @media (max-width: 720px) {
-    .layout { flex-direction: column; }
+    .layout {
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
     aside {
       width: 100%;
+      flex-shrink: 0;
+      overflow: visible;
       border-right: none;
       border-bottom: 1px solid var(--border);
     }
     .cards-grid { grid-template-columns: 1fr; }
-    main { padding: 14px; }
+    main {
+      flex: none;
+      overflow: visible;
+      padding: 14px;
+    }
     .race-head h2 { font-size: 0.95rem; }
     .progress { min-width: 80px; }
     table.lanes .col-split,
@@ -384,6 +395,28 @@
   .legend span.hidden{opacity:.35;text-decoration:line-through}
   .legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
   .zoom-hint{font-size:10px;color:var(--text-muted);margin-left:6px;font-style:italic}
+
+  /* Mobile layout — après règles desktop pour gagner en cascade */
+  @media (max-width: 720px) {
+    .layout {
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    aside {
+      width: 100%;
+      flex-shrink: 0;
+      overflow: visible;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    main {
+      flex: none;
+      overflow: visible;
+      min-height: auto;
+    }
+  }
 </style>
 </head>
 <body>
