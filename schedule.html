@@ -969,7 +969,11 @@ function render() {
     const codes = S.entriesLoaded
       ? nationCodesFromEntries(S.nationFilter)
       : [S.nationFilter];
+    const beforeCount = S.races.length;
     races = races.filter(r => raceMatchesNationCodes(r, codes));
+    // #region agent log
+    fetch('http://127.0.0.1:7875/ingest/de178605-a63a-44cd-9c05-56fda985f837',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'36811a'},body:JSON.stringify({sessionId:'36811a',hypothesisId:'H1-multi-code',location:'schedule.html:render',message:'nation filter',data:{page:'schedule',filter:S.nationFilter,codes,beforeCount,afterCount:races.length,entriesLoaded:S.entriesLoaded},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
   }
 
   // ── Counts per status ──

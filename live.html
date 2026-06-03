@@ -169,7 +169,8 @@
     .race-head h2 { font-size: 0.95rem; }
     .progress { min-width: 80px; }
     table.lanes .col-split,
-    table.lanes .col-final { display: none; }
+    table.lanes .col-final,
+    table.lanes .col-crew { display: none; }
     .tracker-actions { flex-wrap: wrap; gap: 6px; }
   }
 
@@ -343,10 +344,6 @@
   .athletes{font-size:11px;color:var(--text-muted);max-width:280px}
   .err{color:var(--red);padding:10px}
   .empty-msg{padding:30px;text-align:center;color:var(--text-muted)}
-  details.lanes-panel{margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
-  details.lanes-panel summary{cursor:pointer;padding:8px 10px;font-size:0.8rem;font-weight:600;color:var(--text-muted);list-style:none}
-  details.lanes-panel summary::-webkit-details-marker{display:none}
-  details.lanes-panel .table-wrap{border:none;border-radius:0}
   details.inters{margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px}
   details.inters summary{cursor:pointer;color:var(--text-muted);font-size:12px}
   table.int{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
@@ -509,8 +506,7 @@ const I18N = {
     hdr_pos: "Pos", hdr_lane: "Lane", hdr_country: "Country",
     hdr_progress: "Progress", hdr_distance: "Distance", hdr_speed: "Speed",
     hdr_split: "Split", hdr_cadence: "Cadence", hdr_gap_leader: "Gap to leader",
-    hdr_final_time: "Final time",
-    lanes_table_title: "Live standings",
+    hdr_final_time: "Final time", hdr_crew: "Crew",
     chart_speed: "Speed (m/s)",
     chart_speed_hint: "Δd/Δt ±{w} s",
     chart_cadence: "Cadence (strokes/min)",
@@ -579,8 +575,7 @@ const I18N = {
     hdr_pos: "Pos", hdr_lane: "Couloir", hdr_country: "Pays",
     hdr_progress: "Progression", hdr_distance: "Distance", hdr_speed: "Vitesse",
     hdr_split: "Split", hdr_cadence: "Cadence", hdr_gap_leader: "Écart leader",
-    hdr_final_time: "Temps final",
-    lanes_table_title: "Classement live",
+    hdr_final_time: "Temps final", hdr_crew: "Équipage",
     chart_speed: "Vitesse (m/s)",
     chart_speed_hint: "Δd/Δt ±{w} s",
     chart_cadence: "Cadence (coups/min)",
@@ -682,7 +677,6 @@ const state = {
   expandedChart: null,
   xZoom: null,
   yScales: {},
-  lanesTableOpen: true,
 };
 
 // ── Notifications state ───────────────────────────────────────────────
@@ -1149,13 +1143,11 @@ function renderTrackerHTML(data){
   const lanes = (cfg.lanes||[]).slice().sort((a,b)=> (a.Lane||99)-(b.Lane||99));
   const totalLength = plot.totalLength || 2000;
 
-  // Sort by gap to leader (0 = leader first)
-  const ranked = lanes.slice().sort((a, b) => {
-    const ga = a.currentPoint?.raceBoatTracker?.distanceFromLeader;
-    const gb = b.currentPoint?.raceBoatTracker?.distanceFromLeader;
-    const va = ga == null ? 1e9 : ga;
-    const vb = gb == null ? 1e9 : gb;
-    return va - vb;
+  // Sort by current position for display priority
+  const ranked = lanes.slice().sort((a,b)=>{
+    const ap = a.currentPoint?.raceBoatTracker?.currentPosition || 99;
+    const bp = b.currentPoint?.raceBoatTracker?.currentPosition || 99;
+    return ap-bp;
   });
 
   const statusName = race.raceStatus?.DisplayName || "—";
@@ -1174,9 +1166,7 @@ function renderTrackerHTML(data){
       <button type="button" class="hdr-btn" onclick="exportLiveCsv()" title="${esc(t("tt_export_csv"))}">${t("btn_export_csv")}</button>
       <button type="button" class="hdr-btn" id="btn-export-pdf" onclick="exportChartsPdf()" title="${esc(t("tt_export_pdf"))}">${t("btn_export_pdf")}</button>
     </div>
-    <details class="lanes-panel"${state.lanesTableOpen ? " open" : ""}>
-      <summary>${t("lanes_table_title")}</summary>
-      <div class="table-wrap"><table class="lanes">
+    <div class="table-wrap"><table class="lanes">
       <thead>
         <tr>
           <th>${t("hdr_pos")}</th><th>${t("hdr_lane")}</th><th>${t("hdr_country")}</th>
@@ -1187,25 +1177,27 @@ function renderTrackerHTML(data){
           <th class="num">${t("hdr_cadence")}</th>
           <th class="num">${t("hdr_gap_leader")}</th>
           <th class="num col-final">${t("hdr_final_time")}</th>
+          <th class="col-crew">${t("hdr_crew")}</th>
         </tr>
       </thead>
       <tbody>`;
 
-  ranked.forEach((lane, i) => {
+  for(const lane of ranked){
     const cp = lane.currentPoint?.raceBoatTracker || {};
-    const pos = i + 1;
+    const pos = cp.currentPosition;
     const dist = cp.distanceTravelled || 0;
     const pct = Math.min(100, (dist/totalLength)*100);
     const ms = cp.metrePerSecond;
     const stroke = cp.strokeRate;
     const gap = cp.distanceFromLeader;
+    const athletes = (lane.raceBoatAthletes||[]).map(a => a.person?._name || a.person?.DisplayName).filter(Boolean).join(" / ");
     const ctryName = lane.country?.DisplayName || "";
     const posClass = pos===1?"p1":pos===2?"p2":pos===3?"p3":"";
     const rowClass = pos===1?"p1":"";
 
     html += `
       <tr class="${rowClass}">
-        <td><span class="pos-pill ${posClass}">${pos}</span></td>
+        <td><span class="pos-pill ${posClass}">${pos||"—"}</span></td>
         <td class="num">${lane.Lane||""}</td>
         <td><span class="ctry">${lane.DisplayName||"?"}</span><div class="small">${ctryName}</div></td>
         <td><div class="progress" title="${dist}m / ${totalLength}m"><div style="width:${pct}%"></div></div><div class="small">${Math.round(pct)}%</div></td>
@@ -1215,9 +1207,10 @@ function renderTrackerHTML(data){
         <td class="num">${stroke ? stroke+" s/m" : "—"}</td>
         <td class="num ${gap===0?"gap lead":"gap"}">${gap==null?"—":(gap===0?t("leader_label"):"-"+gap+"m")}</td>
         <td class="num col-final">${fmtResultTime(lane.ResultTime)}</td>
+        <td class="athletes col-crew">${athletes}</td>
       </tr>`;
-  });
-  html += `</tbody></table></div></details>`;
+  }
+  html += `</tbody></table></div>`;
 
   // Intermediates table
   const interDistances = new Set();
@@ -1820,7 +1813,6 @@ function selectRace(id){
   const r = state.races.find(x => x.id===id); if(!r) return;
   state.selectedRace = r;
   state.hiddenLanes.clear(); state.expandedChart = null; state.xZoom = null; state.yScales = {};
-  state.lanesTableOpen = true;
   state.lastData = null; state.lastUpdate = null; state.lastError = null;
   state.currentTrackerType = /live/i.test(r.raceStatus?.DisplayName||"") ? "Live" : "Replay";
   render();
@@ -2063,12 +2055,6 @@ function autoSearchOnLoad() {
 })();
 
 $("btn-search").addEventListener("click", search);
-
-$("main-area").addEventListener("toggle", (e) => {
-  if (e.target.matches("details.lanes-panel")) {
-    state.lanesTableOpen = e.target.open;
-  }
-}, true);
 
 initTheme();
 applyStaticI18n();

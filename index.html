@@ -2067,7 +2067,11 @@ function renderRaceList() {
     const codes = hasEntries
       ? nationCodesFromEntries(S.raceNationFilter)
       : [S.raceNationFilter];
+    const beforeCount = S.races.length;
     racesToShow = S.races.filter(r => raceMatchesNationCodes(r, codes));
+    // #region agent log
+    fetch('http://127.0.0.1:7875/ingest/de178605-a63a-44cd-9c05-56fda985f837',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'36811a'},body:JSON.stringify({sessionId:'36811a',hypothesisId:'H1-multi-code',location:'index.html:renderRaceList',message:'nation filter',data:{page:'index',filter:S.raceNationFilter,codes,beforeCount,afterCount:racesToShow.length,hasEntries},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
   }
 
   const groups = {};
