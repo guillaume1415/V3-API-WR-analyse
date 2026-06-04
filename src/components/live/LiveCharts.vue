@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLiveStore } from '@/stores/live'
 import { laneColor, laneSeriesRecalcSpeed, RECALC_WINDOW } from '@/lib/lanes'
-import { baseLayout, buildTraces, yRange } from '@/components/charts/chartTheme'
+import { baseLayout, buildTraces, plotlyYAxisConfig, yRangeBounds } from '@/components/charts/chartTheme'
 import { useAppStore } from '@/stores/app'
 import { useI18n } from 'vue-i18n'
 import PlotlyChart from '@/components/charts/PlotlyChart.vue'
@@ -45,7 +45,8 @@ function collectYValues(spec) {
 function makeSpec(id, titleKey, spec, options = {}) {
   const userScale = yScales.value[id]
   const ys = collectYValues(spec)
-  const [yMin, yMax] = yRange(spec, userScale, ys)
+  const [dataLo, dataHi] = yRangeBounds(spec, userScale, ys)
+  const yAxisCfg = plotlyYAxisConfig(spec, userScale, ys)
 
   const traces = buildTraces(lanes.value, {
     ...spec,
@@ -61,32 +62,42 @@ function makeSpec(id, titleKey, spec, options = {}) {
     xaxis: { range: [xMin.value, xMax.value] },
     yaxis: {
       title: spec.label,
-      range: [yMin, yMax],
       tickformat: spec.yDec === 0 ? '.0f' : '.1f',
+      ...yAxisCfg,
     },
     layout: { title: { text: t(titleKey, spec.titleParams || {}), font: { size: 11 } } },
     yaxis2: options.yaxis2,
   })
 
-  return { id, titleKey, spec, traces, layout, scaleEditable: options.scaleEditable, yMin, yMax, userScale }
+  return {
+    id,
+    titleKey,
+    spec,
+    traces,
+    layout,
+    scaleEditable: options.scaleEditable,
+    yMin: dataLo,
+    yMax: dataHi,
+    userScale,
+  }
 }
 
 const speedSpec = computed(() => ({
   seriesFn: (l) => laneSeriesRecalcSpeed(l),
   label: t('spec_speed'),
   yMin: 3.5,
-  invertY: true,
   yDec: 1,
   titleParams: { w: RECALC_WINDOW },
+  fmt: (v) => `${v.toFixed(2)} m/s`,
 }))
 
 const cadenceSpec = computed(() => ({
   getY: (tr) => tr.strokeRate,
   label: t('spec_cadence'),
   yMin: 30,
-  invertY: true,
   yDec: 0,
   dashed: true,
+  fmt: (v) => `${v.toFixed(0)} s/m`,
 }))
 
 const rankSpec = computed(() => ({
@@ -95,6 +106,8 @@ const rankSpec = computed(() => ({
   yMin: 1,
   yMax: nLanes.value,
   yDec: 0,
+  invertY: true,
+  fmt: (v) => `P${Math.round(v)}`,
 }))
 
 const gapSpec = computed(() => ({
@@ -102,6 +115,8 @@ const gapSpec = computed(() => ({
   label: t('spec_gap'),
   yMin: 0,
   yDec: 0,
+  invertY: true,
+  fmt: (v) => (v === 0 ? t('leader_label') : `${v.toFixed(0)} m`),
 }))
 
 const charts = computed(() => {
@@ -118,8 +133,8 @@ const dualChart = computed(() => {
   if (!lanes.value.length) return null
   const speedYs = collectYValues(speedSpec.value)
   const cadYs = collectYValues(cadenceSpec.value)
-  const [syMin, syMax] = yRange(speedSpec.value, null, speedYs)
-  const [cyMin, cyMax] = yRange(cadenceSpec.value, null, cadYs)
+  const speedY = plotlyYAxisConfig(speedSpec.value, null, speedYs)
+  const cadenceY = plotlyYAxisConfig(cadenceSpec.value, null, cadYs)
 
   const speedTraces = buildTraces(lanes.value, { ...speedSpec.value, colorFn: laneColor }, {
     hiddenLanes: hiddenLanes.value,
@@ -139,20 +154,23 @@ const dualChart = computed(() => {
     traces: [...speedTraces, ...cadTraces],
     layout: baseLayout(app.theme, {
       xaxis: { range: [xMin.value, xMax.value] },
-      yaxis: { title: t('spec_speed'), range: [syMin, syMax] },
-      yaxis2: { title: t('spec_cadence'), range: [cyMin, cyMax] },
+      yaxis: { title: t('spec_speed'), ...speedY },
+      yaxis2: { title: t('spec_cadence'), ...cadenceY },
       layout: { title: { text: t('chart_dual'), font: { size: 11 } } },
     }),
   }
 })
 
-const legendLanes = computed(() =>
-  lanes.value.map((lane, idx) => ({
-    id: lane.id,
-    name: lane.DisplayName,
-    color: laneColor(lane, idx),
-    hidden: hiddenLanes.value.has(lane.id),
-  })),
+const legendItems = computed(() =>
+  lanes.value
+    .map((lane, idx) => ({
+      id: lane.id,
+      name: lane.DisplayName || '?',
+      color: laneColor(lane, idx),
+      hidden: hiddenLanes.value.has(lane.id),
+      order: lane.Lane || idx + 1,
+    }))
+    .sort((a, b) => a.order - b.order),
 )
 
 function onYInput(chartId, field, ev) {
@@ -241,6 +259,17 @@ function hasYOverride(chartId) {
         :data="chart.traces"
         :layout="chart.layout"
       />
+      <div class="chart-legend">
+        <span
+          v-for="ln in legendItems"
+          :key="ln.id"
+          :class="{ hidden: ln.hidden }"
+          @click="store.toggleLane(ln.id)"
+        >
+          <i :style="{ background: ln.color }" />
+          {{ ln.name }}
+        </span>
+      </div>
     </div>
 
     <div
@@ -278,47 +307,17 @@ function hasYOverride(chartId) {
         :data="dualChart.traces"
         :layout="dualChart.layout"
       />
-    </div>
-
-    <div class="legend">
-      <span
-        v-for="ln in legendLanes"
-        :key="ln.id"
-        :class="{ hidden: ln.hidden }"
-        @click="store.toggleLane(ln.id)"
-      >
-        <i :style="{ background: ln.color }" />
-        {{ ln.name }}
-      </span>
-      <span class="legend-style">
-        <svg
-          width="20"
-          height="6"
-        ><line
-          x1="0"
-          y1="3"
-          x2="20"
-          y2="3"
-          stroke="var(--text)"
-          stroke-width="1.8"
-        /></svg>
-        {{ t('spec_speed') }}
-      </span>
-      <span class="legend-style">
-        <svg
-          width="20"
-          height="6"
-        ><line
-          x1="0"
-          y1="3"
-          x2="20"
-          y2="3"
-          stroke="var(--text)"
-          stroke-width="1.4"
-          stroke-dasharray="4,3"
-        /></svg>
-        {{ t('spec_cadence') }}
-      </span>
+      <div class="chart-legend">
+        <span
+          v-for="ln in legendItems"
+          :key="ln.id"
+          :class="{ hidden: ln.hidden }"
+          @click="store.toggleLane(ln.id)"
+        >
+          <i :style="{ background: ln.color }" />
+          {{ ln.name }}
+        </span>
+      </div>
     </div>
   </div>
 </template>

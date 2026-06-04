@@ -3,16 +3,18 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLiveStore } from '@/stores/live'
 import { fmtResultTime } from '@/lib/format'
-import { fmtMS, fmtSplit } from '@/lib/liveFormat'
+import { fmtMS, fmtSplit, isRaceFinished, tableLanes } from '@/lib/liveFormat'
 import { useI18n } from 'vue-i18n'
 import LiveCharts from './LiveCharts.vue'
 
 const store = useLiveStore()
-const { ranked, totalLength, trackerConfig } = storeToRefs(store)
+const { lanes, totalLength, trackerConfig } = storeToRefs(store)
 const { t } = useI18n()
 
 const race = computed(() => trackerConfig.value?.race || {})
 const statusName = computed(() => race.value.raceStatus?.DisplayName || '—')
+const displayLanes = computed(() => tableLanes(lanes.value, statusName.value))
+const raceFinished = computed(() => isRaceFinished(statusName.value))
 const statusClass = computed(() => {
   if (/live/i.test(statusName.value)) return 'live'
   if (/finished|official/i.test(statusName.value)) return 'replay'
@@ -25,7 +27,7 @@ const raceDate = computed(() => (race.value.DateString || '').slice(0, 16).repla
 
 const interDistances = computed(() => {
   const set = new Set()
-  for (const lane of ranked.value) {
+  for (const lane of displayLanes.value) {
     for (const i of lane.intermediates || []) {
       if (i.distance?.DisplayName) set.add(i.distance.DisplayName)
     }
@@ -109,20 +111,20 @@ function formatGap(gap) {
         </thead>
         <tbody>
           <tr
-            v-for="lane in ranked"
+            v-for="(lane, rowIdx) in displayLanes"
             :key="lane.id"
-            :class="{ p1: lane.currentPoint?.raceBoatTracker?.currentPosition === 1 }"
+            :class="{ p1: (raceFinished ? rowIdx === 0 : lane.currentPoint?.raceBoatTracker?.currentPosition === 1) }"
           >
             <td>
               <span
                 class="pos-pill"
                 :class="{
-                  p1: lane.currentPoint?.raceBoatTracker?.currentPosition === 1,
-                  p2: lane.currentPoint?.raceBoatTracker?.currentPosition === 2,
-                  p3: lane.currentPoint?.raceBoatTracker?.currentPosition === 3,
+                  p1: raceFinished ? rowIdx === 0 : lane.currentPoint?.raceBoatTracker?.currentPosition === 1,
+                  p2: raceFinished ? rowIdx === 1 : lane.currentPoint?.raceBoatTracker?.currentPosition === 2,
+                  p3: raceFinished ? rowIdx === 2 : lane.currentPoint?.raceBoatTracker?.currentPosition === 3,
                 }"
               >
-                {{ lane.currentPoint?.raceBoatTracker?.currentPosition || '—' }}
+                {{ raceFinished ? rowIdx + 1 : (lane.currentPoint?.raceBoatTracker?.currentPosition || '—') }}
               </span>
             </td>
             <td class="num">
@@ -202,10 +204,17 @@ function formatGap(gap) {
         </thead>
         <tbody>
           <tr
-            v-for="lane in ranked"
+            v-for="(lane, rowIdx) in displayLanes"
             :key="lane.id"
           >
-            <td>{{ lane.DisplayName }}</td>
+            <td>
+              <span
+                v-if="raceFinished"
+                class="pos-pill small-pill"
+                :class="{ p1: rowIdx === 0, p2: rowIdx === 1, p3: rowIdx === 2 }"
+              >{{ rowIdx + 1 }}</span>
+              {{ lane.DisplayName }}
+            </td>
             <td
               v-for="d in interDistances"
               :key="d"

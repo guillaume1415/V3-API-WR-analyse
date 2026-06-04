@@ -90,9 +90,10 @@ export const plotConfig = {
   modeBarButtonsToRemove: ['lasso2d', 'select2d'],
 }
 
-export function yRange(spec, userScale, values) {
+/** Bornes en valeurs de données (bas → haut), pour les champs d'échelle */
+export function yRangeBounds(spec, userScale, values) {
   const ys = values.filter((v) => v != null && isFinite(v))
-  let yMin =
+  let lo =
     userScale?.yMin != null
       ? userScale.yMin
       : spec.yMin != null
@@ -100,7 +101,7 @@ export function yRange(spec, userScale, values) {
         : ys.length
           ? Math.min(...ys)
           : 0
-  let yMax =
+  let hi =
     userScale?.yMax != null
       ? userScale.yMax
       : spec.yMax != null
@@ -108,9 +109,28 @@ export function yRange(spec, userScale, values) {
         : ys.length
           ? Math.max(...ys)
           : 1
-  if (spec.invertY) [yMin, yMax] = [yMax, yMin]
-  if (yMin === yMax) yMax = yMin + 1
-  return [yMin, yMax]
+  if (lo > hi) [lo, hi] = [hi, lo]
+  if (lo === hi) hi = lo + 1
+  return [lo, hi]
+}
+
+/**
+ * Config axe Y Plotly — valeurs toujours positives sur l'axe.
+ * Sans invertY : petites valeurs en bas, grandes en haut (ex. 30 en bas, 40 en haut).
+ * Avec invertY : petites valeurs en haut (P1, leader 0 m) — rang / écart uniquement.
+ */
+export function plotlyYAxisConfig(spec, userScale, values) {
+  const [lo, hi] = yRangeBounds(spec, userScale, values)
+  if (spec.invertY) {
+    return { range: [lo, hi], autorange: 'reversed' }
+  }
+  return { range: [lo, hi], autorange: false }
+}
+
+/** @deprecated utiliser plotlyYAxisConfig */
+export function plotlyYRange(spec, userScale, values) {
+  const cfg = plotlyYAxisConfig(spec, userScale, values)
+  return cfg.range
 }
 
 export function buildTraces(lanes, spec, { hiddenLanes, xMin, xMax, yaxis = 'y' }) {
@@ -133,19 +153,23 @@ export function buildTraces(lanes, spec, { hiddenLanes, xMin, xMax, yaxis = 'y' 
         : []
     const filtered = pts.filter((p) => p.x >= xMin && p.x <= xMax)
     if (filtered.length < 2) return
+    const yRaw = filtered.map((p) => p.y)
     traces.push({
       type: 'scatter',
       mode: 'lines',
       name: lane.DisplayName,
       x: filtered.map((p) => p.x),
-      y: filtered.map((p) => p.y),
+      y: yRaw,
+      customdata: spec.fmt ? yRaw.map((y) => spec.fmt(y)) : undefined,
       line: {
         color: spec.colorFn ? spec.colorFn(lane, idx) : '#5da7f7',
         width: spec.dashed ? 1.4 : 1.8,
         dash: spec.dashed ? 'dash' : 'solid',
       },
       yaxis,
-      hovertemplate: `%{y:.2f}<extra>${lane.DisplayName}</extra>`,
+      hovertemplate: spec.fmt
+        ? `%{customdata}<extra>${lane.DisplayName}</extra>`
+        : `%{y:.2f}<extra>${lane.DisplayName}</extra>`,
     })
   })
   return traces

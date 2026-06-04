@@ -517,6 +517,56 @@ table.int td:first-child {
   letter-spacing: 0;
 }
 
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chart-legend span:hover {
+  background: var(--border);
+}
+
+.chart-legend span.hidden {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+.chart-legend span.hidden i {
+  opacity: 0.5;
+}
+
+.chart-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.small-pill {
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 10px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .legend {
   grid-column: 1 / -1;
   display: flex;

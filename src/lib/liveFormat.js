@@ -1,3 +1,6 @@
+import { parseSec } from '@/lib/pace'
+import { rankedLanes } from '@/lib/lanes'
+
 export function fmtMS(t) {
   if (t == null) return '—'
   return `${t.toFixed(1)} m/s`
@@ -30,4 +33,22 @@ export function raceStatusClass(statusName) {
   if (/live/i.test(statusName)) return 'live'
   if (/finished|official/i.test(statusName)) return 'replay'
   return 'scheduled'
+}
+
+export function isRaceFinished(statusName) {
+  return /finished|official/i.test(statusName || '')
+}
+
+/** Ordre des lignes : position live, ou classement final (temps) si course terminée */
+export function tableLanes(lanes, statusName) {
+  if (!isRaceFinished(statusName)) return rankedLanes(lanes)
+  return [...lanes].sort((a, b) => {
+    const ta = parseSec(a.ResultTime)
+    const tb = parseSec(b.ResultTime)
+    if (ta == null && tb == null) return (a.Lane || 99) - (b.Lane || 99)
+    if (ta == null) return 1
+    if (tb == null) return -1
+    if (ta !== tb) return ta - tb
+    return (a.Lane || 99) - (b.Lane || 99)
+  })
 }
