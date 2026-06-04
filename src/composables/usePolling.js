@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 
-export function usePolling(callback, intervalMs, { immediate = true } = {}) {
+export function usePolling(callback, intervalMs, { immediate = true, autoStart = true } = {}) {
   const active = ref(false)
   let timer = null
 
@@ -23,8 +23,10 @@ export function usePolling(callback, intervalMs, { immediate = true } = {}) {
     active.value = false
   }
 
-  onMounted(start)
-  onUnmounted(stop)
+  if (autoStart) {
+    onMounted(start)
+    onUnmounted(stop)
+  }
 
   return { start, stop, active }
 }

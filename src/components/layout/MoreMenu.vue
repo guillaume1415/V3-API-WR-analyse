@@ -3,7 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
-import { fmtRelative } from '@/lib/format'
+import { useLiveStore } from '@/stores/live'
+import { fmtRelative, fmtTime } from '@/lib/format'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -12,8 +13,9 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const app = useAppStore()
+const live = useLiveStore()
 
 const menuRef = ref(null)
 
@@ -25,10 +27,14 @@ const favInfo = computed(() =>
 
 const refreshInfo = computed(() => {
   if (route.meta.liveMenu) {
-    if (app.lastRefreshAt) {
-      return t('menu_status_live', { when: fmtRelative(app.lastRefreshAt, t) })
-    }
-    return t('menu_status_idle')
+    if (!live.selectedRace) return t('menu_status_idle')
+    if (live.lastError) return t('menu_status_error', { msg: live.lastError })
+    const when = live.lastUpdate
+      ? fmtTime(new Date(live.lastUpdate), locale.value)
+      : '—'
+    return live.isLiveTracker
+      ? t('menu_status_live', { when })
+      : t('menu_status_replay', { when })
   }
   if (app.lastRefreshAt) {
     return t('menu_refresh_last', { when: fmtRelative(app.lastRefreshAt, t) })

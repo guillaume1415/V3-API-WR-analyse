@@ -137,6 +137,11 @@ header {
   animation: pulse 2s infinite;
 }
 
+.refresh-dot.replay {
+  background: var(--gold);
+  animation: pulse 2s infinite;
+}
+
 @keyframes pulse {
   0%,
   100% {

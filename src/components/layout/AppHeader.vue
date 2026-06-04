@@ -3,12 +3,14 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
-import { fmtRelative } from '@/lib/format'
+import { useLiveStore } from '@/stores/live'
+import { fmtRelative, fmtTime } from '@/lib/format'
 import MoreMenu from './MoreMenu.vue'
 
 const route = useRoute()
 const { t, locale } = useI18n()
 const app = useAppStore()
+const live = useLiveStore()
 
 const moreOpen = ref(false)
 
@@ -27,8 +29,25 @@ const themeIcon = computed(() => (app.theme === 'light' ? '☀️' : '🌙'))
 const langIcon = computed(() => locale.value.toUpperCase())
 
 const refreshLabel = computed(() => {
+  if (route.meta.nav === 'live') {
+    if (!live.selectedRace) return t('status_ready')
+    if (live.lastError) return t('status_error')
+    const time = live.lastUpdate
+      ? fmtTime(new Date(live.lastUpdate), locale.value)
+      : '—'
+    return `${live.isLiveTracker ? t('status_live') : t('status_replay')} · ${time}`
+  }
   if (app.lastRefreshAt) return fmtRelative(app.lastRefreshAt, t)
   return t(route.meta.refreshKey || 'refresh_label')
+})
+
+const refreshDotClass = computed(() => {
+  if (route.meta.nav !== 'live') {
+    return { on: !!app.lastRefreshAt || route.meta.nav !== 'analyse' }
+  }
+  if (!live.selectedRace) return {}
+  if (live.lastError) return {}
+  return { on: true, replay: !live.isLiveTracker }
 })
 
 const showCompare = computed(() => route.meta.nav === 'results')
@@ -82,7 +101,7 @@ function isActive(name) {
       >
         <span
           class="refresh-dot"
-          :class="{ on: !!app.lastRefreshAt || route.meta.nav !== 'analyse' }"
+          :class="refreshDotClass"
         />
         <span class="lbl-text">{{ refreshLabel }}</span>
       </span>
