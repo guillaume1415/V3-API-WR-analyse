@@ -302,6 +302,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
 }
 
 .empty {

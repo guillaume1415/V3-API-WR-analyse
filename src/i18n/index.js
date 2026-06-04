@@ -1,15 +1,14 @@
 import { createI18n } from 'vue-i18n'
+import { getLang, setLang as persistLang } from '@/services/storage'
 import en from './en.json'
 import fr from './fr.json'
 
-const STORAGE_KEY = 'wr-lang'
-
 export function getStoredLang() {
-  return localStorage.getItem(STORAGE_KEY) || 'en'
+  return getLang()
 }
 
 export function setStoredLang(lang) {
-  localStorage.setItem(STORAGE_KEY, lang)
+  persistLang(lang)
 }
 
 const i18n = createI18n({

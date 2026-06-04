@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { fmtRelative } from '@/lib/format'
 import MoreMenu from './MoreMenu.vue'
 
 const route = useRoute()
@@ -19,8 +20,18 @@ const navItems = [
 ]
 
 const pageTitleKey = computed(() => route.meta.titleKey || 'title_results')
+const subtitleKey = computed(() => route.meta.subtitleKey || 'subtitle')
+const refreshTitleKey = computed(() => route.meta.refreshTitleKey || 'tt_refresh')
+
 const themeIcon = computed(() => (app.theme === 'light' ? '☀️' : '🌙'))
 const langIcon = computed(() => locale.value.toUpperCase())
+
+const refreshLabel = computed(() => {
+  if (app.lastRefreshAt) return fmtRelative(app.lastRefreshAt, t)
+  return t(route.meta.refreshKey || 'refresh_label')
+})
+
+const showCompare = computed(() => route.meta.nav === 'results')
 
 function toggleMoreMenu(e) {
   e.stopPropagation()
@@ -46,7 +57,7 @@ function isActive(name) {
       <div class="logo">🚣</div>
       <div class="brand-text">
         <h1>{{ t(pageTitleKey) }}</h1>
-        <p>{{ t('subtitle') }}</p>
+        <p>{{ t(subtitleKey) }}</p>
       </div>
     </RouterLink>
 
@@ -65,9 +76,15 @@ function isActive(name) {
     </nav>
 
     <div class="header-tools">
-      <span class="refresh-status">
-        <span class="refresh-dot on" />
-        <span class="lbl-text">{{ t('refresh_label') }}</span>
+      <span
+        class="refresh-status"
+        :title="t(refreshTitleKey)"
+      >
+        <span
+          class="refresh-dot"
+          :class="{ on: !!app.lastRefreshAt || route.meta.nav !== 'analyse' }"
+        />
+        <span class="lbl-text">{{ refreshLabel }}</span>
       </span>
       <button
         type="button"
@@ -80,9 +97,12 @@ function isActive(name) {
         <span class="hdr-lbl">{{ t('hdr_notifs') }}</span>
       </button>
       <button
+        v-if="showCompare"
         type="button"
         class="hdr-btn hdr-btn--desktop-only"
+        :class="{ active: app.compareMode }"
         :title="t('tt_compare')"
+        @click="app.toggleCompare()"
       >
         <span class="hdr-icon">🔀</span>
         <span class="hdr-lbl">{{ t('hdr_compare') }}</span>

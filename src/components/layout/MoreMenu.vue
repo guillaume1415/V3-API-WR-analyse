@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { fmtRelative } from '@/lib/format'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -9,6 +11,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+const route = useRoute()
 const { t } = useI18n()
 const app = useAppStore()
 
@@ -21,9 +24,14 @@ const favInfo = computed(() =>
 )
 
 const refreshInfo = computed(() => {
+  if (route.meta.liveMenu) {
+    if (app.lastRefreshAt) {
+      return t('menu_status_live', { when: fmtRelative(app.lastRefreshAt, t) })
+    }
+    return t('menu_status_idle')
+  }
   if (app.lastRefreshAt) {
-    const when = new Date(app.lastRefreshAt).toLocaleTimeString()
-    return t('menu_refresh_last', { when })
+    return t('menu_refresh_last', { when: fmtRelative(app.lastRefreshAt, t) })
   }
   return t('menu_refresh_active')
 })
@@ -33,6 +41,7 @@ function onNotifClick() {
 }
 
 function onCompareClick() {
+  app.toggleCompare()
   emit('close')
 }
 
