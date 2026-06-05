@@ -47,7 +47,7 @@
   .brand-text h1 { font-size: 1.05rem; font-weight: 600; line-height: 1.2; }
   .brand-text p  { font-size: 0.72rem; color: var(--text-muted); line-height: 1.2; margin-top: 2px; }
 
-  .header-nav { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .header-nav { display: flex; gap: 4px; align-items: center; }
   .nav-link {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 6px 11px; border-radius: var(--radius);
@@ -67,18 +67,11 @@
   .header-tools {
     margin-left: auto;
     display: flex; align-items: center; gap: 6px;
-    flex-shrink: 0;
   }
   .refresh-status {
     font-size: 0.7rem; color: var(--text-muted);
     padding: 0 4px; white-space: nowrap;
     display: inline-flex; align-items: center; gap: 5px;
-    max-width: min(220px, 35vw);
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .refresh-status .lbl-text {
-    overflow: hidden; text-overflow: ellipsis;
   }
   .hdr-btn {
     display: inline-flex; align-items: center; gap: 5px;
@@ -160,44 +153,14 @@
     header { padding: 9px 12px; gap: 8px; }
     .brand-text { display: none; }
     .nav-label, .hdr-lbl { display: none; }
-    .nav-link { padding: 6px 9px; }
-    .refresh-status { max-width: 120px; font-size: 0.65rem; }
+    .refresh-status .lbl-text { display: none; }
     .hdr-btn { padding: 6px 9px; }
+    .nav-link { padding: 6px 9px; }
   }
   @media (max-width: 560px) {
     .hdr-btn#btn-notif,
     .refresh-status { display: none; }
     .hdr-more { display: inline-flex; align-items: center; justify-content: center; }
-  }
-
-  @media (max-width: 720px) {
-    .layout {
-      flex-direction: column;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-    }
-    aside {
-      width: 100%;
-      flex-shrink: 0;
-      overflow: visible;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-    }
-    .cards-grid { grid-template-columns: 1fr; }
-    main {
-      flex: none;
-      overflow: visible;
-      padding: 14px;
-    }
-    .analyse-toolbar { flex-direction: column; align-items: stretch; }
-    .toolbar-group { width: 100%; }
-    .nation-pills {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 4px;
-    }
   }
 
   /* ── Layout ── */
@@ -418,8 +381,9 @@
     color:var(--accent);font-weight:600;
   }
 
-  /* Mobile layout — après règles desktop pour gagner en cascade */
-  @media (max-width: 720px) {
+  /* Mobile / tablette paysage : sidebar en haut (comme mobile portrait) */
+  @media (max-width: 720px),
+         (orientation: landscape) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
     .layout {
       flex-direction: column;
       overflow-y: auto;

@@ -157,34 +157,6 @@
     .hdr-more { display: inline-flex; align-items: center; justify-content: center; }
   }
 
-  @media (max-width: 720px) {
-    .layout {
-      flex-direction: column;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-    }
-    aside {
-      width: 100%;
-      flex-shrink: 0;
-      overflow: visible;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-    }
-    .cards-grid { grid-template-columns: 1fr; }
-    main {
-      flex: none;
-      overflow: visible;
-      padding: 14px;
-    }
-    .race-head h2 { font-size: 0.95rem; }
-    .progress { min-width: 80px; }
-    table.lanes .col-split,
-    table.lanes .col-final,
-    table.lanes .col-crew { display: none; }
-    .tracker-actions { flex-wrap: wrap; gap: 6px; }
-  }
-
   /* ── Toast notifications ── */
   .toast-container {
     position: fixed; bottom: 16px; right: 16px; z-index: 300;
@@ -396,8 +368,9 @@
   .legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
   .zoom-hint{font-size:10px;color:var(--text-muted);margin-left:6px;font-style:italic}
 
-  /* Mobile layout — après règles desktop pour gagner en cascade */
-  @media (max-width: 720px) {
+  /* Mobile / tablette paysage : sidebar en haut (comme mobile portrait) */
+  @media (max-width: 720px),
+         (orientation: landscape) and (max-width: 1366px) and (hover: none) and (pointer: coarse) {
     .layout {
       flex-direction: column;
       overflow-y: auto;
@@ -411,11 +384,19 @@
       border-right: none;
       border-bottom: 1px solid var(--border);
     }
+    .cards-grid { grid-template-columns: 1fr; }
     main {
       flex: none;
       overflow: visible;
       min-height: auto;
+      padding: 14px;
     }
+    .race-head h2 { font-size: 0.95rem; }
+    .progress { min-width: 80px; }
+    table.lanes .col-split,
+    table.lanes .col-final,
+    table.lanes .col-crew { display: none; }
+    .tracker-actions { flex-wrap: wrap; gap: 6px; }
   }
 </style>
 </head>
