@@ -775,6 +775,27 @@ function fmtDate(d){
 }
 function renderLoading(msg){ return `<div class="loading"><div class="spinner"></div>${esc(msg)}</div>`; }
 
+// ── Tri des classes de bateau : Open → Light → Para → Mix, M → W → Mix ──
+function boatClassSortKey(name) {
+  const s = String(name || "").trim();
+  let cat = 3, gender = 2;
+  if (/^PR\d?\s*M/i.test(s))      { cat = 2; gender = 0; }
+  else if (/^PR\d?\s*W/i.test(s)) { cat = 2; gender = 1; }
+  else if (/^PR/i.test(s))        { cat = 2; gender = 2; }
+  else if (/^LM/i.test(s))        { cat = 1; gender = 0; }
+  else if (/^LW/i.test(s))        { cat = 1; gender = 1; }
+  else if (/^M(?!ix)/i.test(s))   { cat = 0; gender = 0; }
+  else if (/^W/i.test(s))         { cat = 0; gender = 1; }
+  else if (/^Mix/i.test(s))       { cat = 0; gender = 2; }
+  return [cat, gender, s];
+}
+function sortClasses(arr) {
+  return [...arr].sort((a, b) => {
+    const ka = boatClassSortKey(a), kb = boatClassSortKey(b);
+    return ka[0] - kb[0] || ka[1] - kb[1] || ka[2].localeCompare(kb[2]);
+  });
+}
+
 // ── live tracker fetch & render ────────────────────────────────────────
 async function fetchTracker(raceId, trackerType){
   const path = `/livetracker/${trackerType==="Live"?"live/":""}${raceId}`;
@@ -1122,7 +1143,7 @@ function renderRaceList(){
   if(state.loadingRaces) return html + renderLoading(t("loading_races"));
   if(!state.races.length) return html + `<div class="empty">${t("no_races")}</div>`;
 
-  const classes = [...new Set(state.races.map(r => r.event?.boatClass?.DisplayName || "—"))];
+  const classes = sortClasses([...new Set(state.races.map(r => r.event?.boatClass?.DisplayName || "Autre"))]);
   html += `<div><div class="section-title">${esc(t("races_count",{n:state.races.length}))}</div></div>`;
   if(classes.length > 1){
     html += `<div class="class-filters">
