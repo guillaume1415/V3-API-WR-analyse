@@ -2100,7 +2100,6 @@ function drawAllPlots(data){
     }
     prevD = i.d; prevT = i.t;
   }
-  const totalTime = inters.length ? formatSec(inters[inters.length-1].t) : null;
 
   // Mapping plotId/axe -> dimension globale (vitesse ou cadence)
   function globalFor(plotId, axis){
@@ -2198,12 +2197,7 @@ function drawAllPlots(data){
       font: { size: 11, color: "#e2e8f0" },
       bgcolor: "rgba(35,39,58,0.65)", bordercolor:"#2e3347", borderwidth:1, borderpad:3,
       yanchor: "bottom",
-    })).concat(totalTime ? [{
-      x: 1000, y: 0.98, xref:"x", yref:"paper",
-      text: `Temps final : <b>${totalTime}</b>`,
-      showarrow: false, font:{size:12, color:"#5da7f7"},
-      yanchor: "bottom",
-    }] : []);
+    }));
   }
 
   function buildSplitShapes(){
