@@ -289,6 +289,13 @@
   .nation-pill .swatch{width:9px;height:9px;border-radius:50%}
   .switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.82rem;color:var(--text)}
   .switch input{cursor:pointer}
+  .toolbar-btn{
+    padding:6px 14px;background:var(--accent);color:#fff;
+    border:none;border-radius:var(--radius);font-size:0.82rem;
+    font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+  }
+  .toolbar-btn:hover{background:var(--accent-hover)}
+  .toolbar-btn:disabled{opacity:.45;cursor:not-allowed}
 
   /* Charts grid */
   .plot-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;position:relative;z-index:1}
@@ -579,6 +586,18 @@ const I18N = {
     notif_title: "🚣 {nation} — race in 5 min",
     notif_no_browser: "Your browser does not support notifications.",
     status_ready: "ready",
+    btn_export_html: "Export HTML report",
+    export_html_busy: "Generating report…",
+    export_no_data: "No analysis data to export. Open a race with tracker data first.",
+    report_title: "World Rowing — Analysis report",
+    report_intermediates: "Intermediates",
+    report_boats: "Boats analysed",
+    report_exported: "Exported",
+    report_chart_speed: "Speed vs distance",
+    report_chart_cadence: "Cadence vs distance",
+    report_chart_time: "Split times vs distance",
+    report_chart_gap: "Gap to leader vs distance",
+    report_chart_dps: "Distance per stroke vs distance",
   },
   fr: {
     title_analyse: "World Rowing — Analyse",
@@ -599,6 +618,18 @@ const I18N = {
     notif_title: "🚣 {nation} — course dans 5 min",
     notif_no_browser: "Votre navigateur ne supporte pas les notifications.",
     status_ready: "prêt",
+    btn_export_html: "Exporter rapport HTML",
+    export_html_busy: "Génération du rapport…",
+    export_no_data: "Aucune donnée à exporter. Ouvrez d'abord une course avec tracker.",
+    report_title: "World Rowing — Rapport d'analyse",
+    report_intermediates: "Intermédiaires",
+    report_boats: "Bateaux analysés",
+    report_exported: "Exporté",
+    report_chart_speed: "Vitesse vs distance",
+    report_chart_cadence: "Cadence vs distance",
+    report_chart_time: "Temps de passage vs distance",
+    report_chart_gap: "Écart au leader vs distance",
+    report_chart_dps: "Distance par coup vs distance",
   },
 };
 const getLang = () => localStorage.getItem("wr-lang") || "en";
@@ -1550,6 +1581,9 @@ function renderAnalyseHTML(data){
         <input type="radio" name="colorby" value="speed" id="opt-colorby-spd" ${state.colorBy==="speed"?"checked":""}/>
         vitesse
       </label>
+    </div>
+    <div class="toolbar-group" style="margin-left:auto">
+      <button type="button" class="toolbar-btn" id="btn-export-html" onclick="exportHtmlReport()" title="${esc(t("btn_export_html"))}">${esc(t("btn_export_html"))}</button>
     </div>
   </div>`;
 
@@ -2528,6 +2562,170 @@ function toggleFullscreen(cardId){
   const plotEl = card.querySelector(".plot");
   if(plotEl && window.Plotly) {
     requestAnimationFrame(() => Plotly.Plots.resize(plotEl));
+  }
+}
+
+// ── Export rapport HTML statique ───────────────────────────────────────
+function reportSlugPart(s){
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48) || "rapport";
+}
+
+function reportFilename(){
+  const parts = [
+    reportSlugPart(state.selectedComp?.DisplayName || state.selectedComp?.CompetitionCode),
+    reportSlugPart(state.selectedRace?.DisplayName),
+  ].filter(Boolean);
+  return (parts.join("_") || "world-rowing-analyse") + "_rapport.html";
+}
+
+function downloadBlob(blob, filename){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function plotToPngDataUrl(plotId, width, height){
+  const el = document.getElementById(plotId);
+  if(!el || !window.Plotly || !el.data || !el.data.length) return null;
+  return Plotly.toImage(el, { format: "png", width, height, scale: 2 });
+}
+
+function buildReportHtml({ meta, paceTableHtml, charts }){
+  const chartBlocks = charts.map(c => `
+    <section class="report-chart">
+      <h2>${esc(c.title)}</h2>
+      <img src="${c.dataUrl}" alt="${esc(c.title)}" loading="lazy"/>
+    </section>`).join("");
+
+  return `<!DOCTYPE html>
+<html lang="${getLang()}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(meta.title)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;color:#1e293b;line-height:1.45;padding:24px}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:1.35rem;margin-bottom:6px}
+  .meta{color:#64748b;font-size:0.88rem;margin-bottom:18px}
+  .meta p{margin:3px 0}
+  .meta strong{color:#334155}
+  section{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:20px}
+  h2{font-size:0.95rem;margin-bottom:10px;color:#334155}
+  .splits-table{width:auto;max-width:100%;border-collapse:collapse;margin:0 auto;font-size:0.82rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;overflow:visible}
+  .splits-table th,.splits-table td{padding:5px 9px;text-align:center;font-variant-numeric:tabular-nums;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+  .splits-table th{background:#f1f5f9;color:#64748b;font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:.03em}
+  .splits-table td.nation,.splits-table th.nation{text-align:left}
+  .splits-table tr:last-child td{border-bottom:none}
+  .splits-table td.rank,.splits-table th.rank{color:#64748b;width:32px}
+  .splits-table .swatch-mini{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .splits-table td.best{color:#059669;font-weight:600}
+  .splits-table td.total{color:#1e293b;font-weight:600}
+  .splits-table td.pace-cell .pace-cum{font-weight:600;color:#1e293b}
+  .splits-table td.pace-cell .pace-split{font-size:0.72rem;color:#64748b}
+  .table-wrap{overflow:visible;width:100%}
+  .report-chart img{display:block;width:100%;height:auto;border:1px solid #e2e8f0;border-radius:6px;background:#fff}
+  @media print{
+    body{padding:0;background:#fff}
+    section{break-inside:avoid;box-shadow:none}
+    .report-chart img{max-height:95vh;object-fit:contain}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>${esc(meta.title)}</h1>
+  <div class="meta">
+    <p><strong>${esc(meta.compLabel)}</strong> ${esc(meta.comp)}</p>
+    <p><strong>${esc(meta.raceLabel)}</strong> ${esc(meta.race)}</p>
+    ${meta.class ? `<p><strong>${esc(meta.classLabel)}</strong> ${esc(meta.class)}</p>` : ""}
+    ${meta.date ? `<p><strong>${esc(meta.dateLabel)}</strong> ${esc(meta.date)}</p>` : ""}
+    <p><strong>${esc(meta.boatsLabel)}</strong> ${esc(meta.boats)}</p>
+    <p><strong>${esc(meta.exportedLabel)}</strong> ${esc(meta.exported)}</p>
+  </div>
+  <section>
+    <h2>${esc(meta.intermediatesLabel)}</h2>
+    <div class="table-wrap">${paceTableHtml}</div>
+  </section>
+  ${chartBlocks}
+</div>
+</body>
+</html>`;
+}
+
+async function exportHtmlReport(){
+  if(!state.lastData?.config){
+    alert(t("export_no_data"));
+    return;
+  }
+  const btn = $("btn-export-html");
+  const prevLabel = btn?.textContent || "";
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = t("export_html_busy");
+  }
+  try {
+    if(state.fullscreenCardId) exitFullscreen();
+
+    const race = state.lastData.config.race || state.selectedRace || {};
+    const lanes = getLanes(state.lastData);
+    const selected = state.selectedLaneIds
+      .map(id => lanes.find(l => l.id === id))
+      .filter(Boolean);
+    const paceTableHtml = renderPaceTable(lanes);
+
+    const chartDefs = [
+      { id: "plot-speed", titleKey: "report_chart_speed", height: 560 },
+      { id: "plot-cadence", titleKey: "report_chart_cadence", height: 560 },
+      { id: "plot-rank", titleKey: "report_chart_time", height: 560 },
+      { id: "plot-gap", titleKey: "report_chart_gap", height: 560 },
+      { id: "plot-dps", titleKey: "report_chart_dps", height: 700 },
+    ];
+    const charts = [];
+    for(const def of chartDefs){
+      const dataUrl = await plotToPngDataUrl(def.id, 1100, def.height);
+      if(dataUrl) charts.push({ title: t(def.titleKey), dataUrl });
+    }
+    if(!charts.length){
+      alert(t("export_no_data"));
+      return;
+    }
+
+    const locale = getLang() === "fr" ? "fr-FR" : "en-GB";
+    const html = buildReportHtml({
+      meta: {
+        title: t("report_title"),
+        compLabel: getLang() === "fr" ? "Compétition :" : "Competition:",
+        comp: state.selectedComp?.DisplayName || "—",
+        raceLabel: getLang() === "fr" ? "Course :" : "Race:",
+        race: race.DisplayName || state.selectedRace?.DisplayName || "—",
+        classLabel: getLang() === "fr" ? "Classe :" : "Class:",
+        class: race.event?.boatClass?.DisplayName || "",
+        dateLabel: getLang() === "fr" ? "Date :" : "Date:",
+        date: (race.DateString || state.selectedRace?.DateString || "").slice(0, 16).replace("T", " "),
+        boatsLabel: t("report_boats") + " :",
+        boats: selected.map(l => l.DisplayName || "?").join(", ") || "—",
+        exportedLabel: t("report_exported") + " :",
+        exported: new Date().toLocaleString(locale),
+        intermediatesLabel: t("report_intermediates"),
+      },
+      paceTableHtml,
+      charts,
+    });
+
+    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), reportFilename());
+  } catch(err){
+    console.error(err);
+    alert(t("export_no_data"));
+  } finally {
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = prevLabel || t("btn_export_html");
+    }
   }
 }
 
