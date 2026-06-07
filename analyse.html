@@ -318,12 +318,20 @@
   }
   .plot-card .btn-expand:hover{background:#e2e8f0;color:#1a1d27}
   .plot-card.fullscreen{
-    position:fixed;inset:20px;z-index:9999;padding:20px;margin:0;
+    position:fixed;inset:20px;z-index:10002;padding:20px;margin:0;
     box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .plot-card.fullscreen .btn-expand{
+    z-index:10003;top:12px;right:12px;
+    width:32px;height:32px;font-size:18px;
+    background:#fff;border-color:var(--accent);color:var(--accent);
   }
   .plot-card.fullscreen .plot,
   .plot-card.fullscreen .plot.tall{height:calc(100vh - 160px)}
   body.has-fullscreen{overflow:hidden}
+  body.has-fullscreen header{z-index:1}
+  body.has-fullscreen main{z-index:10000;position:relative}
+  body.has-fullscreen #pace-table-section{z-index:1}
 
   .splits-strip{
     display:flex;gap:8px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-muted);
@@ -823,6 +831,7 @@ const state = {
   yScales:{},                 // {plotId: {min, max}} user overrides
   xScales:{},                 // {plotId: {min, max}} user overrides (currently dual only)
   cScales:{},                 // {plotId: {min, max}} colorbar overrides
+  fullscreenCardId: null,     // id de la carte graphe en plein écran (persiste au re-render)
   // Échelles globales (s'appliquent à tous les axes/couleurs concernés
   // sauf si un override par graphe existe déjà dans yScales/xScales/cScales)
   globalScales:{
@@ -976,8 +985,11 @@ function render(){
   </div>`;
   if(!state.lastData) html += renderLoading("Chargement des données de course…");
   else html += renderAnalyseHTML(state.lastData);
+  const _fsBefore = document.querySelector(".plot-card.fullscreen");
+  if (_fsBefore) state.fullscreenCardId = _fsBefore.id;
   m.innerHTML = html;
   if(state.lastData) drawAllPlots(state.lastData);
+  restoreFullscreenIfNeeded();
 }
 
 function renderCompList(){
@@ -2247,6 +2259,9 @@ function drawAllPlots(data){
     const useSpeed = (colorMode === "speed") || (colorMode === "auto" && state.colorBy === "speed");
     const colorArr = useSpeed ? s.speeds : s.cads;
     const colorTitle = useSpeed ? "Vitesse (m/s)" : "Cadence (spm)";
+    let hoverColorLabel = colorTitle;
+    if (plotId === "speed" && !useSpeed) hoverColorLabel = "SPM";
+    else if ((plotId === "cadence" || plotId === "gap") && useSpeed) hoverColorLabel = "m/s";
     const cDefKey = useSpeed ? "cadence" : "speed";   // C_DEFAULTS index
     const cr = cRange(plotId, colorArr, C_DEFAULTS[cDefKey] || {});
     const safeColor = colorArr.map(v => (v!=null && isFinite(v)) ? v : cr.cmin);
@@ -2261,7 +2276,7 @@ function drawAllPlots(data){
         line: { width:0.4, color:"rgba(0,0,0,0.4)" },
       },
       name: s.lane.DisplayName || ("Lane "+s.lane.Lane),
-      hovertemplate: `<b>%{fullData.name}</b> : ${hovY}${yUnit?" "+yUnit:""} · ${colorTitle}: %{marker.color:.2f}<extra></extra>`,
+      hovertemplate: `<b>%{fullData.name}</b> : ${hovY}${yUnit?" "+yUnit:""} · ${hoverColorLabel}: %{marker.color:.2f}<extra></extra>`,
     }];
   }
 
@@ -2457,13 +2472,59 @@ function resetCScale(plotId){
   delete state.cScales[plotId];
   render();
 }
+function updateExpandButton(card, isFull){
+  const btn = card?.querySelector(".btn-expand");
+  if(!btn) return;
+  btn.textContent = isFull ? "✕" : "⛶";
+  btn.title = isFull ? "Quitter le plein écran" : "Plein écran";
+}
+
+function exitFullscreen(){
+  const card = state.fullscreenCardId
+    ? document.getElementById(state.fullscreenCardId)
+    : document.querySelector(".plot-card.fullscreen");
+  if(card){
+    card.classList.remove("fullscreen");
+    updateExpandButton(card, false);
+    const plotEl = card.querySelector(".plot");
+    if(plotEl && window.Plotly) requestAnimationFrame(() => Plotly.Plots.resize(plotEl));
+  }
+  state.fullscreenCardId = null;
+  document.body.classList.remove("has-fullscreen");
+}
+
+function restoreFullscreenIfNeeded(){
+  if(!state.fullscreenCardId) {
+    document.body.classList.remove("has-fullscreen");
+    return;
+  }
+  const card = document.getElementById(state.fullscreenCardId);
+  if(!card){
+    state.fullscreenCardId = null;
+    document.body.classList.remove("has-fullscreen");
+    return;
+  }
+  card.classList.add("fullscreen");
+  document.body.classList.add("has-fullscreen");
+  updateExpandButton(card, true);
+  const plotEl = card.querySelector(".plot");
+  if(plotEl && window.Plotly) requestAnimationFrame(() => Plotly.Plots.resize(plotEl));
+}
+
 // Plein écran d'une carte de graphe
 function toggleFullscreen(cardId){
   const card = document.getElementById(cardId);
   if(!card) return;
-  const isFull = card.classList.toggle("fullscreen");
-  document.body.classList.toggle("has-fullscreen", isFull);
-  // Re-layout Plotly après changement de taille
+  const wasFull = card.classList.contains("fullscreen");
+  if(wasFull){
+    exitFullscreen();
+  } else {
+    exitFullscreen();
+    card.classList.add("fullscreen");
+    state.fullscreenCardId = cardId;
+    document.body.classList.add("has-fullscreen");
+    updateExpandButton(card, true);
+  }
   const plotEl = card.querySelector(".plot");
   if(plotEl && window.Plotly) {
     requestAnimationFrame(() => Plotly.Plots.resize(plotEl));
@@ -2556,6 +2617,10 @@ window.addEventListener("resize", () => {
       try { Plotly.Plots.resize(el); } catch(_) {}
     });
   }, 150);
+});
+
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape" && state.fullscreenCardId) exitFullscreen();
 });
 
 initTheme();
